@@ -3,59 +3,33 @@ import { Card } from '@heroui/react';
 interface StatCardProps {
   title: string;
   value: number | string;
-  color?: 'primary' | 'success' | 'warning' | 'danger';
+  description?: string;
   icon?: React.ReactNode;
 }
-
-const colorConfig = {
-  primary: {
-    bg: 'bg-gradient-to-br from-blue-50 to-blue-100',
-    border: 'border-blue-200',
-    icon: 'text-blue-600',
-    value: 'text-blue-700',
-  },
-  success: {
-    bg: 'bg-gradient-to-br from-green-50 to-green-100',
-    border: 'border-green-200',
-    icon: 'text-green-600',
-    value: 'text-green-700',
-  },
-  warning: {
-    bg: 'bg-gradient-to-br from-amber-50 to-amber-100',
-    border: 'border-amber-200',
-    icon: 'text-amber-600',
-    value: 'text-amber-700',
-  },
-  danger: {
-    bg: 'bg-gradient-to-br from-red-50 to-red-100',
-    border: 'border-red-200',
-    icon: 'text-red-600',
-    value: 'text-red-700',
-  },
-};
 
 export const StatCard = ({
   title,
   value,
-  color = 'primary',
+  description,
   icon,
 }: StatCardProps) => {
-  const config = colorConfig[color];
-
   return (
-    <Card className={`${config.bg} border-2 ${config.border} shadow-md hover:shadow-lg transition-shadow`}>
-      <Card.Content className="gap-4 p-6">
+    <Card className="rounded-md border border-slate-200 bg-slate-900 text-white shadow-sm">
+      <Card.Content className="gap-4 p-5">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">
               {title}
             </p>
-            <p className={`text-4xl font-bold ${config.value}`}>
+            <p className="mt-3 text-3xl font-bold text-white">
               {value}
             </p>
+            {description && (
+              <p className="mt-2 text-sm text-slate-300">{description}</p>
+            )}
           </div>
           {icon && (
-            <div className={`text-4xl ${config.icon} bg-white rounded-lg p-3`}>
+            <div className="rounded-md border border-white/10 bg-white/10 p-3 text-slate-100">
               {icon}
             </div>
           )}

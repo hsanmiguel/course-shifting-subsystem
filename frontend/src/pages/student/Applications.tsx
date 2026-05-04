@@ -1,134 +1,104 @@
-import { Card, Button, Chip, Input, Select, Label, ListBox } from '@heroui/react';
+import { Card, Button } from '@heroui/react';
+import { ArrowRight, CalendarDays, FileText, Lock } from 'lucide-react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
 
-interface Application {
-  id: string;
-  courseName: string;
-  department: string;
-  status: 'pending' | 'approved' | 'rejected';
-  submittedDate: string;
-  lastUpdated: string;
-}
+const activeRequest = {
+  id: 'CSR-2024-001',
+  currentCourse: 'BS Computer Science',
+  desiredCourse: 'BS Information Technology',
+  status: 'under_review',
+  submittedDate: '2024-02-01',
+  lastUpdated: '2024-02-05',
+  reviewer: 'College Registrar',
+  reason:
+    'I want to align my program with software implementation, networking, and systems administration career goals.',
+};
 
 export default function Applications() {
-  const mockApplications: Application[] = [
-    {
-      id: 'APP-001',
-      courseName: 'Advanced Data Structures',
-      department: 'Computer Science',
-      status: 'approved',
-      submittedDate: '2024-01-15',
-      lastUpdated: '2024-01-20',
-    },
-    {
-      id: 'APP-002',
-      courseName: 'Web Development Principles',
-      department: 'Computer Science',
-      status: 'pending',
-      submittedDate: '2024-02-01',
-      lastUpdated: '2024-02-01',
-    },
-    {
-      id: 'APP-003',
-      courseName: 'Database Systems',
-      department: 'Computer Science',
-      status: 'rejected',
-      submittedDate: '2024-01-10',
-      lastUpdated: '2024-01-25',
-    },
-  ];
-
-  const getStatusColor = (status: Application['status']) => {
-    switch (status) {
-      case 'approved':
-        return 'success';
-      case 'pending':
-        return 'warning';
-      case 'rejected':
-        return 'danger';
-      default:
-        return 'default';
-    }
-  };
-
   return (
-    <SidebarLayout title="My Applications" userRole="student">
-      <div className="space-y-6">
-        {/* Filters and Search */}
-        <div className="flex flex-col md:flex-row gap-4 items-end">
-          <Input
-            placeholder="Search applications..."
-            className="md:flex-1"
-          />
-          <Select className="md:w-48">
-            <Label>Filter by Status</Label>
-            <Select.Trigger>
-              <Select.Value />
-              <Select.Indicator />
-            </Select.Trigger>
-            <Select.Popover>
-              <ListBox>
-                <ListBox.Item id="all" textValue="All Status">
-                  All Status
-                  <ListBox.ItemIndicator />
-                </ListBox.Item>
-                <ListBox.Item id="pending" textValue="Pending">
-                  Pending
-                  <ListBox.ItemIndicator />
-                </ListBox.Item>
-                <ListBox.Item id="approved" textValue="Approved">
-                  Approved
-                  <ListBox.ItemIndicator />
-                </ListBox.Item>
-                <ListBox.Item id="rejected" textValue="Rejected">
-                  Rejected
-                  <ListBox.ItemIndicator />
-                </ListBox.Item>
-              </ListBox>
-            </Select.Popover>
-          </Select>
-          <Button variant="primary">
-            New Application
-          </Button>
+    <SidebarLayout title="My Request" userRole="student">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Course shifting</p>
+          <h1 className="mt-2 text-3xl font-bold text-slate-950">Active Request</h1>
+          <p className="mt-2 max-w-2xl text-slate-600">
+            Students can only keep one course shifting request in process. New submissions are locked while a request is pending.
+          </p>
         </div>
 
-        {/* Applications List */}
-        <div className="grid gap-4">
-          {mockApplications.map((app) => (
-            <Card key={app.id} className="p-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold">{app.courseName}</h3>
-                    <Chip
-                      color={getStatusColor(app.status)}
-                      size="sm"
-                      variant="flat"
-                    >
-                      {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                    </Chip>
-                  </div>
-                  <p className="text-sm text-gray-500">{app.department}</p>
-                  <div className="flex gap-4 mt-3 text-xs text-gray-400">
-                    <span>Application ID: {app.id}</span>
-                    <span>Submitted: {app.submittedDate}</span>
-                    <span>Updated: {app.lastUpdated}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="secondary">
-                    View
-                  </Button>
-                  {app.status === 'pending' && (
-                    <Button size="sm" variant="tertiary">
-                      Edit
-                    </Button>
-                  )}
+        <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
+          <Card.Content className="gap-6 p-6">
+            <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 md:flex-row md:items-start md:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="rounded-md bg-slate-100 p-3 text-slate-700">
+                  <FileText className="h-6 w-6" />
+                </span>
+                <div>
+                  <p className="text-xl font-semibold text-slate-950">Course Shifting Request</p>
+                  <p className="mt-1 text-sm text-slate-500">{activeRequest.id}</p>
                 </div>
               </div>
-            </Card>
-          ))}
-        </div>
+              <StatusBadge status={activeRequest.status} />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current Course</p>
+                <p className="mt-2 font-semibold text-slate-950">{activeRequest.currentCourse}</p>
+              </div>
+              <div className="hidden text-slate-400 md:block">
+                <ArrowRight className="h-5 w-5" />
+              </div>
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Desired Course</p>
+                <p className="mt-2 font-semibold text-slate-950">{activeRequest.desiredCourse}</p>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-slate-200 p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Reason</p>
+              <p className="mt-2 text-sm leading-6 text-slate-700">{activeRequest.reason}</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-md border border-slate-200 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Submitted</p>
+                <p className="mt-2 flex items-center gap-2 font-medium text-slate-900">
+                  <CalendarDays className="h-4 w-4 text-slate-500" />
+                  {activeRequest.submittedDate}
+                </p>
+              </div>
+              <div className="rounded-md border border-slate-200 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Last Updated</p>
+                <p className="mt-2 font-medium text-slate-900">{activeRequest.lastUpdated}</p>
+              </div>
+              <div className="rounded-md border border-slate-200 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Reviewer</p>
+                <p className="mt-2 font-medium text-slate-900">{activeRequest.reviewer}</p>
+              </div>
+            </div>
+          </Card.Content>
+        </Card>
+
+        <Card className="rounded-md border border-slate-200 bg-slate-900 text-white shadow-sm">
+          <Card.Content className="p-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-3">
+                <Lock className="mt-0.5 h-5 w-5 text-slate-300" />
+                <div>
+                  <p className="font-semibold">New request locked</p>
+                  <p className="mt-1 text-sm text-slate-300">
+                    You can submit another request after this one is approved, rejected, or withdrawn.
+                  </p>
+                </div>
+              </div>
+              <Button variant="secondary" isDisabled>
+                Start New Request
+              </Button>
+            </div>
+          </Card.Content>
+        </Card>
       </div>
     </SidebarLayout>
   );

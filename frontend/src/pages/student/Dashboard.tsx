@@ -1,70 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Card, Button, Input, Label, TextArea } from '@heroui/react';
 import {
-  Card,
-  Button,
-  Input,
-  TextArea,
-  Label,
-} from '@heroui/react';
+  CalendarClock,
+  CheckCircle2,
+  ClipboardCheck,
+  FilePenLine,
+  FileText,
+  Send,
+  X,
+} from 'lucide-react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { StatCard } from '@/components/atoms/StatCard';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { ApplicationCard } from '@/components/molecules/ApplicationCard';
-import { ShiftingApplication, CourseEquivalency, Notification, DashboardStats } from '@/types';
+import { ShiftingApplication, CourseEquivalency, Notification } from '@/types';
 
-// Mock data
-const mockApplications: ShiftingApplication[] = [
-  {
-    id: '1',
-    studentId: 'STU001',
-    studentName: 'John Doe',
-    studentEmail: 'john@example.com',
-    currentCourses: 'CS101, CS102',
-    desiredCourses: 'CS201, CS202',
-    reason: 'Need advanced courses for specialization',
-    status: 'approved',
-    createdAt: '2024-01-15',
-    updatedAt: '2024-01-20',
-    submittedAt: '2024-01-15',
-    approvedAt: '2024-01-20',
-    approverName: 'Dr. Smith',
-  },
-  {
-    id: '2',
-    studentId: 'STU001',
-    studentName: 'John Doe',
-    studentEmail: 'john@example.com',
-    currentCourses: 'PHYS101',
-    desiredCourses: 'PHYS201',
-    reason: 'Continue with advanced physics track',
-    status: 'under_review',
-    createdAt: '2024-02-01',
-    updatedAt: '2024-02-05',
-    submittedAt: '2024-02-01',
-  },
-  {
-    id: '3',
-    studentId: 'STU001',
-    studentName: 'John Doe',
-    studentEmail: 'john@example.com',
-    currentCourses: 'ENG101, ENG102',
-    desiredCourses: 'LIT201, LIT202',
-    reason: 'Switch to literature focus',
-    status: 'draft',
-    createdAt: '2024-02-10',
-    updatedAt: '2024-02-10',
-  },
-];
+const activeApplication: ShiftingApplication = {
+  id: 'CSR-2024-001',
+  studentId: 'STU-2021-0001',
+  studentName: 'John Doe',
+  studentEmail: 'john@example.com',
+  currentCourses: 'BS Computer Science',
+  desiredCourses: 'BS Information Technology',
+  reason: 'I want to align my program with software implementation, networking, and systems administration career goals.',
+  status: 'under_review',
+  createdAt: '2024-02-01',
+  updatedAt: '2024-02-05',
+  submittedAt: '2024-02-01',
+};
 
 const mockEquivalencies: CourseEquivalency[] = [
   {
     id: '1',
     currentSubject: 'CS101',
     currentSubjectCode: 'CS101',
-    equivalentSubject: 'CS201',
-    equivalentSubjectCode: 'CS201',
+    equivalentSubject: 'IT101',
+    equivalentSubjectCode: 'IT101',
     credits: 3,
     status: 'approved',
   },
@@ -72,17 +45,17 @@ const mockEquivalencies: CourseEquivalency[] = [
     id: '2',
     currentSubject: 'MATH101',
     currentSubjectCode: 'MATH101',
-    equivalentSubject: 'MATH201',
-    equivalentSubjectCode: 'MATH201',
+    equivalentSubject: 'MATH101',
+    equivalentSubjectCode: 'MATH101',
     credits: 4,
     status: 'pending',
   },
   {
     id: '3',
-    currentSubject: 'PHYS101',
-    currentSubjectCode: 'PHYS101',
-    equivalentSubject: 'PHYS201',
-    equivalentSubjectCode: 'PHYS201',
+    currentSubject: 'CS102',
+    currentSubjectCode: 'CS102',
+    equivalentSubject: 'IT102',
+    equivalentSubjectCode: 'IT102',
     credits: 3,
     status: 'approved',
   },
@@ -91,32 +64,23 @@ const mockEquivalencies: CourseEquivalency[] = [
 const mockNotifications: Notification[] = [
   {
     id: '1',
-    type: 'success',
-    title: 'Application Approved',
-    message: 'Your course shift application has been approved.',
-    date: '2024-01-20',
-  },
-  {
-    id: '2',
     type: 'info',
-    title: 'Application Under Review',
-    message: 'Your new application has been submitted for review.',
+    title: 'Request Under Review',
+    message: 'Your course shifting request is being reviewed by the department.',
     date: '2024-02-05',
   },
   {
-    id: '3',
-    type: 'warning',
-    title: 'Pending Action Required',
-    message: 'Some information is missing from your application.',
-    date: '2024-02-10',
+    id: '2',
+    type: 'success',
+    title: 'Course Equivalency Updated',
+    message: 'Two course equivalencies have been marked as approved.',
+    date: '2024-02-04',
   },
 ];
 
 export default function StudentDashboard() {
-  // Student login check
   const [isStudentLoggedIn] = useState(true);
-  
-  const [applications, setApplications] = useState<ShiftingApplication[]>(mockApplications);
+  const [application, setApplication] = useState<ShiftingApplication | null>(activeApplication);
   const [selectedApp, setSelectedApp] = useState<ShiftingApplication | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -125,12 +89,15 @@ export default function StudentDashboard() {
     reason: '',
   });
 
-  const stats: DashboardStats = {
-    total: applications.length,
-    pending: applications.filter((a) => a.status === 'submitted' || a.status === 'under_review').length,
-    approved: applications.filter((a) => a.status === 'approved').length,
-    rejected: applications.filter((a) => a.status === 'rejected').length,
-  };
+  const hasPendingRequest = application?.status === 'submitted' || application?.status === 'under_review';
+
+  const reviewProgress = useMemo(() => {
+    if (!application) return 'Not started';
+    if (application.status === 'approved' || application.status === 'completed') return 'Approved';
+    if (application.status === 'rejected') return 'Closed';
+    if (application.status === 'draft') return 'Draft';
+    return 'In review';
+  }, [application]);
 
   const handleViewApplication = (app: ShiftingApplication) => {
     setSelectedApp(app);
@@ -138,6 +105,8 @@ export default function StudentDashboard() {
   };
 
   const handleNewApplication = () => {
+    if (hasPendingRequest) return;
+
     setSelectedApp(null);
     setFormData({ currentCourses: '', desiredCourses: '', reason: '' });
     setShowModal(true);
@@ -145,27 +114,29 @@ export default function StudentDashboard() {
 
   const handleSubmitApplication = () => {
     if (formData.currentCourses && formData.desiredCourses && formData.reason) {
+      const submittedDate = new Date().toISOString().split('T')[0];
       const newApp: ShiftingApplication = {
-        id: Date.now().toString(),
-        studentId: 'STU001',
+        id: `CSR-${Date.now()}`,
+        studentId: 'STU-2021-0001',
         studentName: 'John Doe',
         studentEmail: 'john@example.com',
-        status: 'draft',
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
+        status: 'submitted',
+        createdAt: submittedDate,
+        updatedAt: submittedDate,
+        submittedAt: submittedDate,
         ...formData,
       };
-      setApplications([...applications, newApp]);
+
+      setApplication(newApp);
       setShowModal(false);
     }
   };
 
-  // Render student content if logged in
   if (!isStudentLoggedIn) {
     return (
       <SidebarLayout title="Student Dashboard">
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">Please log in to access the student dashboard.</p>
+        <div className="py-12 text-center">
+          <p className="text-lg text-slate-500">Please log in to access the student dashboard.</p>
         </div>
       </SidebarLayout>
     );
@@ -173,179 +144,188 @@ export default function StudentDashboard() {
 
   return (
     <SidebarLayout title="Student Dashboard">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Student Dashboard</h1>
-        <p className="text-gray-600 mt-1">Manage your course shift applications and track their status</p>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        <StatCard title="Total Applications" value={stats.total} color="primary" icon="📋" />
-        <StatCard title="Pending" value={stats.pending} color="warning" icon="⏳" />
-        <StatCard title="Approved" value={stats.approved} color="success" icon="✓" />
-        <StatCard title="Rejected" value={stats.rejected} color="danger" icon="✗" />
-      </div>
-
-      {/* Recent Applications Section */}
-      <Card className="bg-white shadow-lg border border-gray-200 mb-8 p-6">
-        <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">My Applications</h2>
-          <Button size="md" variant="primary" onPress={handleNewApplication}>
-            + New Application
-          </Button>
+      <div className="mx-auto max-w-7xl space-y-8">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard title="Active Request" value={application ? '1' : '0'} description={application?.id ?? 'No request on file'} icon={<FileText className="h-6 w-6" />} />
+          <StatCard title="Review Status" value={reviewProgress} description={application ? 'Current workflow stage' : 'Ready for submission'} icon={<CalendarClock className="h-6 w-6" />} />
+          <StatCard title="Approved Matches" value={mockEquivalencies.filter((item) => item.status === 'approved').length} description="Course equivalencies" icon={<CheckCircle2 className="h-6 w-6" />} />
+          <StatCard title="Pending Items" value={mockEquivalencies.filter((item) => item.status === 'pending').length} description="Awaiting validation" icon={<ClipboardCheck className="h-6 w-6" />} />
         </div>
-        <div className="space-y-3">
-          {applications.length > 0 ? (
-            applications.map((app) => (
-              <ApplicationCard
-                key={app.id}
-                application={app}
-                onView={handleViewApplication}
-              />
-            ))
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No applications yet. Create your first one!</p>
-            </div>
-          )}
-        </div>
-      </Card>
 
-      {/* Course Equivalencies Section */}
-      <Card className="bg-white shadow-lg border border-gray-200 mb-8 p-6">
-        <h2 className="text-2xl font-bold text-gray-900 pb-4 border-b border-gray-200">Course Equivalencies</h2>
-        <div className="overflow-x-auto mt-4">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-blue-50 border-b-2 border-blue-200">
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">Current Course</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">Code</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">Equivalent Course</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">Code</th>
-                <th className="text-center py-4 px-6 font-semibold text-gray-900">Credits</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-900">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockEquivalencies.map((eq, idx) => (
-                <tr key={eq.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
-                  <td className="py-4 px-6 text-gray-900 font-medium">{eq.currentSubject}</td>
-                  <td className="py-4 px-6 text-gray-600 font-mono">{eq.currentSubjectCode}</td>
-                  <td className="py-4 px-6 text-gray-900 font-medium">{eq.equivalentSubject}</td>
-                  <td className="py-4 px-6 text-gray-600 font-mono">{eq.equivalentSubjectCode}</td>
-                  <td className="py-4 px-6 text-center text-gray-900 font-semibold">{eq.credits}</td>
-                  <td className="py-4 px-6">
-                    <StatusBadge status={eq.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* Notifications Section */}
-      <Card className="bg-white shadow-lg border border-gray-200 p-6">
-        <h2 className="text-2xl font-bold text-gray-900 pb-4 border-b border-gray-200">Recent Notifications</h2>
-        <div className="space-y-3 mt-4">
-          {mockNotifications.map((notif) => (
-            <div key={notif.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <p className="font-semibold text-gray-900">{notif.title}</p>
-                    <StatusBadge status={notif.type} />
-                  </div>
-                  <p className="text-sm text-gray-600">{notif.message}</p>
-                  <p className="text-xs text-gray-500 mt-2">📅 {notif.date}</p>
+        {hasPendingRequest && (
+          <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
+            <Card.Content className="p-5">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="font-semibold text-slate-950">A course shifting request is already pending.</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Multiple submissions are locked while your current request is under review.
+                  </p>
                 </div>
+                <StatusBadge status={application?.status ?? 'pending'} />
               </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+            </Card.Content>
+          </Card>
+        )}
 
-      {/* Modal for Application Details or New Application */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <Card className="max-w-md w-full shadow-2xl border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
-              <h2 className="text-xl font-bold">
-                {selectedApp ? 'Application Details' : 'New Application'}
-              </h2>
+        <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
+          <Card.Content className="gap-6 p-6">
+            <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-950">Current Request</h2>
+                <p className="mt-1 text-sm text-slate-500">One request record is shown for the student account.</p>
+              </div>
+              <Button size="sm" variant="secondary" onPress={handleNewApplication} isDisabled={hasPendingRequest}>
+                <FilePenLine className="h-4 w-4" />
+                Start New
+              </Button>
             </div>
-            <div className="p-6 max-h-[60vh] overflow-y-auto">
+
+            {application ? (
+              <ApplicationCard application={application} onView={handleViewApplication} />
+            ) : (
+              <div className="rounded-md border border-dashed border-slate-300 p-8 text-center">
+                <p className="font-semibold text-slate-900">No course shifting request yet</p>
+                <p className="mt-2 text-sm text-slate-500">Start one request when you are ready to change course.</p>
+              </div>
+            )}
+          </Card.Content>
+        </Card>
+
+        <div className="grid gap-8 xl:grid-cols-[2fr_1fr]">
+          <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
+            <Card.Content className="gap-5 p-6">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-950">Course Equivalencies</h2>
+                <p className="mt-1 text-sm text-slate-500">Subjects aligned to the requested destination course.</p>
+              </div>
+              <div className="overflow-hidden rounded-md border border-slate-200">
+                <table className="w-full table-fixed text-sm">
+                  <thead className="bg-slate-100 text-slate-600">
+                    <tr>
+                      <th className="w-[18%] px-3 py-3 text-left font-semibold">Current Subject</th>
+                      <th className="w-[16%] px-3 py-3 text-left font-semibold">Current Code</th>
+                      <th className="w-[34%] px-3 py-3 text-left font-semibold">Equivalent Subject</th>
+                      <th className="w-[12%] px-3 py-3 text-center font-semibold">Credits</th>
+                      <th className="w-[20%] px-3 py-3 text-left font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {mockEquivalencies.map((eq) => (
+                      <tr key={eq.id} className="bg-white">
+                        <td className="px-3 py-4 font-medium text-slate-950">{eq.currentSubject}</td>
+                        <td className="px-3 py-4 font-mono text-slate-600">{eq.currentSubjectCode}</td>
+                        <td className="px-3 py-4 text-slate-700">{eq.equivalentSubjectCode} - {eq.equivalentSubject}</td>
+                        <td className="px-3 py-4 text-center font-semibold text-slate-950">{eq.credits}</td>
+                        <td className="px-3 py-4">
+                          <StatusBadge status={eq.status} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card.Content>
+          </Card>
+
+          <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
+            <Card.Content className="gap-5 p-6">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-950">Recent Activity</h2>
+                <p className="mt-1 text-sm text-slate-500">Updates for your current request.</p>
+              </div>
+              <div className="space-y-3">
+                {mockNotifications.map((notif) => (
+                  <div key={notif.id} className="rounded-md border border-slate-200 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="font-semibold text-slate-950">{notif.title}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">{notif.message}</p>
+                        <p className="mt-3 text-xs font-medium text-slate-500">{notif.date}</p>
+                      </div>
+                      <StatusBadge status={notif.type} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card.Content>
+          </Card>
+        </div>
+      </div>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+          <Card className="w-full max-w-xl overflow-hidden rounded-md border border-slate-200 shadow-2xl">
+            <div className="flex items-center justify-between bg-slate-900 px-6 py-4 text-white">
+              <h2 className="text-lg font-semibold">
+                {selectedApp ? 'Request Details' : 'New Course Shifting Request'}
+              </h2>
+              <Button size="sm" variant="tertiary" onPress={() => setShowModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="max-h-[65vh] overflow-y-auto p-6">
               {selectedApp ? (
                 <div className="space-y-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-500 font-semibold mb-1">CURRENT COURSES</p>
-                    <p className="font-semibold text-gray-900">{selectedApp.currentCourses}</p>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current Course</p>
+                      <p className="mt-2 font-semibold text-slate-950">{selectedApp.currentCourses}</p>
+                    </div>
+                    <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Desired Course</p>
+                      <p className="mt-2 font-semibold text-slate-950">{selectedApp.desiredCourses}</p>
+                    </div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-500 font-semibold mb-1">DESIRED COURSES</p>
-                    <p className="font-semibold text-gray-900">{selectedApp.desiredCourses}</p>
+                  <div className="rounded-md border border-slate-200 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Reason</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">{selectedApp.reason}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-500 font-semibold mb-1">REASON</p>
-                    <p className="text-gray-700">{selectedApp.reason}</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-500 font-semibold mb-2">STATUS</p>
+                  <div className="rounded-md border border-slate-200 p-4">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
                     <StatusBadge status={selectedApp.status} />
                   </div>
-                  {selectedApp.approverNotes && (
-                    <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                      <p className="text-xs text-yellow-700 font-semibold mb-1">APPROVER NOTES</p>
-                      <p className="text-yellow-900">{selectedApp.approverNotes}</p>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="current-courses" className="font-semibold text-gray-900">Current Courses</Label>
+                    <Label htmlFor="current-courses" className="font-semibold text-slate-900">Current Course</Label>
                     <Input
                       id="current-courses"
-                      placeholder="e.g., CS101, MATH101"
+                      placeholder="e.g., BS Computer Science"
                       value={formData.currentCourses}
-                      onChange={(e) =>
-                        setFormData({ ...formData, currentCourses: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, currentCourses: e.target.value })}
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="desired-courses" className="font-semibold text-gray-900">Desired Courses</Label>
+                    <Label htmlFor="desired-courses" className="font-semibold text-slate-900">Desired Course</Label>
                     <Input
                       id="desired-courses"
-                      placeholder="e.g., CS201, MATH201"
+                      placeholder="e.g., BS Information Technology"
                       value={formData.desiredCourses}
-                      onChange={(e) =>
-                        setFormData({ ...formData, desiredCourses: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, desiredCourses: e.target.value })}
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="reason" className="font-semibold text-gray-900">Reason for Shifting</Label>
+                    <Label htmlFor="reason" className="font-semibold text-slate-900">Reason for Shifting</Label>
                     <TextArea
                       id="reason"
-                      placeholder="Explain why you want to shift these courses"
+                      placeholder="Explain why you want to shift courses"
                       value={formData.reason}
-                      onChange={(e) =>
-                        setFormData({ ...formData, reason: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                     />
                   </div>
                 </div>
               )}
             </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex gap-2 justify-end bg-gray-50">
+            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-6 py-4">
               <Button variant="secondary" onPress={() => setShowModal(false)}>
                 Cancel
               </Button>
               {!selectedApp && (
                 <Button variant="primary" onPress={handleSubmitApplication}>
-                  Save as Draft
+                  <Send className="h-4 w-4" />
+                  Submit Request
                 </Button>
               )}
             </div>

@@ -1,5 +1,7 @@
 import { Card, Button, Chip } from '@heroui/react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
+import { StatCard } from '@/components/atoms/StatCard';
+import { BookOpenCheck, CheckCircle2, Clock3, Info, XCircle } from 'lucide-react';
 
 interface CourseEquivalency {
   id: string;
@@ -64,33 +66,16 @@ export default function CourseEquivalencies() {
       <div className="space-y-6">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100">
-            <p className="text-sm text-gray-600">Total Courses</p>
-            <p className="text-3xl font-bold text-blue-600 mt-2">{mockEquivalencies.length}</p>
-          </Card>
-          <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100">
-            <p className="text-sm text-gray-600">Verified</p>
-            <p className="text-3xl font-bold text-green-600 mt-2">
-              {mockEquivalencies.filter(e => e.status === 'verified').length}
-            </p>
-          </Card>
-          <Card className="p-6 bg-gradient-to-br from-yellow-50 to-yellow-100">
-            <p className="text-sm text-gray-600">Pending</p>
-            <p className="text-3xl font-bold text-yellow-600 mt-2">
-              {mockEquivalencies.filter(e => e.status === 'pending').length}
-            </p>
-          </Card>
-          <Card className="p-6 bg-gradient-to-br from-red-50 to-red-100">
-            <p className="text-sm text-gray-600">Rejected</p>
-            <p className="text-3xl font-bold text-red-600 mt-2">
-              {mockEquivalencies.filter(e => e.status === 'rejected').length}
-            </p>
-          </Card>
+          <StatCard title="Total Courses" value={mockEquivalencies.length} icon={<BookOpenCheck className="h-6 w-6" />} />
+          <StatCard title="Verified" value={mockEquivalencies.filter(e => e.status === 'verified').length} icon={<CheckCircle2 className="h-6 w-6" />} />
+          <StatCard title="Pending" value={mockEquivalencies.filter(e => e.status === 'pending').length} icon={<Clock3 className="h-6 w-6" />} />
+          <StatCard title="Rejected" value={mockEquivalencies.filter(e => e.status === 'rejected').length} icon={<XCircle className="h-6 w-6" />} />
         </div>
 
         {/* Equivalencies Table */}
-        <Card className="p-6">
-          <div className="overflow-x-auto">
+        <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
+          <Card.Content className="p-6">
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-100 border-b-2 border-gray-300">
@@ -147,17 +132,27 @@ export default function CourseEquivalencies() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </Card.Content>
         </Card>
 
         {/* Notes */}
-        <Card className="p-6 bg-blue-50 border border-blue-200">
-          <p className="text-sm font-semibold text-blue-900 mb-2">ℹ️ About Course Equivalencies</p>
-          <p className="text-sm text-blue-800">
-            Course equivalencies are automatically matched based on course content, credits, and learning outcomes. 
-            A higher match percentage indicates a closer equivalence to your course. Rejected equivalencies 
-            indicate that no suitable equivalent course was found in the new program.
-          </p>
+        <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
+          <Card.Content className="p-6">
+            <div className="flex items-start gap-3">
+              <span className="rounded-md bg-slate-100 p-2 text-slate-700">
+                <Info className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="mb-2 text-sm font-semibold text-slate-950">About Course Equivalencies</p>
+                <p className="text-sm leading-6 text-slate-600">
+                  Course equivalencies are automatically matched based on course content, credits, and learning outcomes.
+                  A higher match percentage indicates a closer equivalence to your course. Rejected equivalencies
+                  indicate that no suitable equivalent course was found in the new program.
+                </p>
+              </div>
+            </div>
+          </Card.Content>
         </Card>
       </div>
     </SidebarLayout>

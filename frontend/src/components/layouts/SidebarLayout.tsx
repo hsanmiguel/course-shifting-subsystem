@@ -22,7 +22,7 @@ export const SidebarLayout = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar Navigation */}
       <SideNav
         userRole={userRole}
@@ -34,11 +34,11 @@ export const SidebarLayout = ({
       {/* Main Content - Offset for fixed sidebar */}
       <div className="flex-1 flex flex-col ml-64">
         {/* Top Navigation Bar */}
-        <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
-          <div className="px-6 py-4">
+        <div className="bg-white border-b border-slate-200 sticky top-0 z-20">
+          <div className="px-8 py-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-              <p className="text-sm text-gray-500 mt-1">Submit and track your program transfer applications</p>
+              <h1 className="text-xl font-semibold text-slate-950">{title}</h1>
+              <p className="text-sm text-slate-500 mt-1">Submit and track your course shifting request</p>
             </div>
           </div>
         </div>
@@ -50,14 +50,14 @@ export const SidebarLayout = ({
           </main>
 
           {/* Footer */}
-          <div className="bg-gray-900 text-gray-400 text-sm py-6">
+          <div className="border-t border-slate-200 bg-white text-slate-500 text-sm py-5">
             <div className="px-8">
               <div className="flex justify-between items-center">
-                <span>&copy; 2024 University Course Shifting System. All rights reserved.</span>
-                <div className="flex gap-6">
-                  <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-                  <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-                  <a href="#" className="hover:text-white transition-colors">Contact Us</a>
+                <span>&copy; 2024 University Course Shifting System</span>
+                <div className="flex gap-6 text-sm">
+                  <a href="#" className="hover:text-slate-900 transition-colors">Privacy</a>
+                  <a href="#" className="hover:text-slate-900 transition-colors">Terms</a>
+                  <a href="#" className="hover:text-slate-900 transition-colors">Contact</a>
                 </div>
               </div>
             </div>

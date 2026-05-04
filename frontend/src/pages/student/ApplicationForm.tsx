@@ -17,9 +17,9 @@ export default function ApplicationForm() {
 
   return (
     <SidebarLayout title="Application Form" userRole="student">
-      <div className="max-w-3xl space-y-6">
+      <div className="w-full space-y-6">
         {/* Form Section */}
-        <Card className="p-8">
+        <Card className="rounded-md p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Personal Information Section */}
             <div>
@@ -168,7 +168,7 @@ export default function ApplicationForm() {
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Supporting Documents</h3>
               <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 cursor-pointer transition">
+                <div className="cursor-pointer rounded-md border-2 border-dashed border-gray-300 p-6 text-center transition hover:border-blue-400">
                   <p className="text-sm text-gray-600">
                     📎 Drag and drop your documents here or click to browse
                   </p>
@@ -234,7 +234,7 @@ export default function ApplicationForm() {
         </Card>
 
         {/* Help Section */}
-        <Card className="p-6 bg-amber-50 border border-amber-200">
+        <Card className="rounded-md border border-amber-200 bg-amber-50 p-6">
           <p className="text-sm font-semibold text-amber-900 mb-2">⚠️ Before You Submit</p>
           <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
             <li>Review all course equivalencies to ensure accuracy</li>

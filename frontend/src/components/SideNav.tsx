@@ -1,6 +1,14 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Button } from '@heroui/react';
+import {
+  ClipboardList,
+  FilePenLine,
+  GitCompareArrows,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+} from 'lucide-react';
 
 interface SideNavProps {
   userRole?: 'student' | 'admin';
@@ -8,39 +16,6 @@ interface SideNavProps {
   studentId?: string;
   onLogout?: () => void;
 }
-
-// Icons
-
-
-const DashboardIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-  </svg>
-);
-
-const ApplicationIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-  </svg>
-);
-
-const FormIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-  </svg>
-);
-
-const EquivalenciesIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-  </svg>
-);
-
-const LogoutIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-  </svg>
-);
 
 export const SideNav = ({
   userRole = 'student',
@@ -56,33 +31,30 @@ export const SideNav = ({
     {
       label: 'Dashboard',
       href: '/student/dashboard',
-      icon: <DashboardIcon />,
+      icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
-      label: 'My Applications',
+      label: 'My Request',
       href: '/student/applications',
-      icon: <ApplicationIcon />,
+      icon: <ClipboardList className="h-5 w-5" />,
     },
     {
       label: 'Application Form',
       href: '/student/application-form',
-      icon: <FormIcon />,
+      icon: <FilePenLine className="h-5 w-5" />,
     },
     {
       label: 'Course Equivalencies',
       href: '/student/course-equivalencies',
-      icon: <EquivalenciesIcon />,
+      icon: <GitCompareArrows className="h-5 w-5" />,
     },
   ];
 
   const adminNavItems = [
     {
-
-    },
-    {
       label: 'Admin Dashboard',
       href: '/admin/dashboard',
-      icon: <DashboardIcon />,
+      icon: <LayoutDashboard className="h-5 w-5" />,
     },
   ];
 
@@ -94,11 +66,9 @@ export const SideNav = ({
       {!isStudent && (
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="fixed top-4 left-4 z-50 lg:hidden p-2 bg-slate-900 text-white rounded-lg"
+          className="fixed top-4 left-4 z-50 rounded-md bg-slate-900 p-2 text-white"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          <Menu className="h-6 w-6" />
         </button>
       )}
 
@@ -129,30 +99,42 @@ export const SideNav = ({
         {/* Navigation Items */}
         <nav className="flex-1 overflow-y-auto p-4 space-y-2">
           {navItems.map((item) => (
-            <Link
+            <NavLink
               key={item.href}
               to={item.href}
               onClick={() => !isStudent && setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-all duration-200 group"
+              className={({ isActive }) =>
+                `group flex items-center gap-3 rounded-md border-l-2 px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                  isActive
+                    ? 'border-transparent bg-slate-700/80 text-white shadow-sm'
+                    : 'border-transparent text-slate-300 hover:bg-slate-700/60 hover:text-white'
+                }`
+              }
             >
-              <span className="text-blue-400 group-hover:text-blue-300">{item.icon}</span>
-              <span className="font-medium text-sm">{item.label}</span>
-            </Link>
+              {({ isActive }) => (
+                <>
+                  <span className={isActive ? 'text-slate-100' : 'text-slate-400 group-hover:text-slate-100'}>
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                </>
+              )}
+            </NavLink>
           ))}
         </nav>
 
         {/* Student Role Badge */}
         {isStudent && (
-          <div className="px-4 py-3 mx-4 mb-4 bg-blue-600 bg-opacity-20 border border-blue-500 rounded-lg">
-            <p className="text-xs font-semibold text-blue-300 uppercase tracking-wider">Role</p>
-            <p className="text-sm text-blue-100 mt-1">Student</p>
+          <div className="mx-4 mb-4 rounded-md border border-slate-600 bg-slate-800 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Role</p>
+            <p className="mt-1 text-sm text-slate-100">Student</p>
           </div>
         )}
 
         {/* User Profile Section */}
         <div className="p-4 border-t border-slate-700">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md bg-blue-600 text-white font-bold">
               {userName.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
@@ -162,10 +144,10 @@ export const SideNav = ({
           </div>
           <Button
             fullWidth
-            className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium"
+            className="rounded-md bg-red-800 text-sm font-medium text-white hover:bg-red-900"
             onPress={onLogout}
           >
-            <LogoutIcon />
+            <LogOut className="h-5 w-5" />
             Logout
           </Button>
         </div>
