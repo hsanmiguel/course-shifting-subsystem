@@ -46,3 +46,63 @@ export interface Notification {
   message: string;
   date: string;
 }
+
+export interface AdminApplication {
+  id: string;
+  studentId: string;
+  studentName: string;
+  currentProgram: string;
+  targetProgram: string;
+  gwa: number;
+  units: number;
+  reason: string;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'waitlisted' | 'escalated';
+  submittedAt: string;
+  assignedTo?: string;
+  reviewerRemarks?: string;
+  eligibilityChecks: {
+    label: string;
+    passed: boolean;
+  }[];
+  slaWarning?: {
+    title: string;
+    hoursPending: number;
+    assignedTo: string;
+    message: string;
+    escalatedTo: string;
+    timestamp: string;
+  };
+}
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  applicationId: string;
+  studentName: string;
+  studentId: string;
+  action: 'approved' | 'rejected' | 'escalated' | 'status_change' | 'waitlisted';
+  actor: string;
+  actorRole: string;
+  details: string;
+  fromStatus: string;
+  toStatus: string;
+}
+
+export interface AdminAnalytics {
+  totalApplications: number;
+  pendingReview: number;
+  approvedApplications: number;
+  rejectedApplications: number;
+  slaBreaches: number;
+  averageGwa: number;
+  averageUnits: number;
+  targetProgramDemand: {
+    program: string;
+    count: number;
+  }[];
+  statusBreakdown: {
+    status: string;
+    count: number;
+  }[];
+  recentEvents: AuditLogEntry[];
+}
