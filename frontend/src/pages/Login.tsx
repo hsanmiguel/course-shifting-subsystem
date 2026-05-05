@@ -127,8 +127,8 @@ export default function Login() {
   }
 
   const validateStudentId = (id: string): boolean => {
-    // Format: STU-YYYY-NNNNN (e.g., STU-2021-00001)
-    const pattern = /^STU-\d{4}-\d{5}$/;
+    // Format: STU-YYYY-NNNNN (e.g., STU-2021-00001) or ADM-YYYY-NNNNN (e.g., ADM-2021-00001)
+    const pattern = /^(STU|ADM)-\d{4}-\d{5}$/;
     return pattern.test(id.trim());
   };
 
@@ -145,7 +145,7 @@ export default function Login() {
     }
 
     if (!validateStudentId(trimmedId)) {
-      setError('Invalid student ID format. Expected: STU-YYYY-NNNNN (e.g., STU-2021-00001)');
+      setError('Invalid ID format. Expected: STU-YYYY-NNNNN  (e.g., STU-2021-00001)');
       return;
     }
 
@@ -157,21 +157,25 @@ export default function Login() {
     try {
       setIsLoading(true);
 
-      // Create dev token: dev:role:userId
-      const devToken = `dev:student:${trimmedId}`;
+      // Determine role based on ID prefix
+      const role = trimmedId.startsWith('ADM-') ? 'system_admin' : 'student';
 
-      // Store in localStorage
+      // Create dev token: dev:role:userId
+      const devToken = `dev:${role}:${trimmedId}`;
+
+      // Store in localStorage with correct keys
       localStorage.setItem('authToken', devToken);
       localStorage.setItem('studentId', trimmedId);
-      localStorage.setItem('email', trimmedEmail);
-      localStorage.setItem('fullName', trimmedEmail.split('@')[0]);
-      localStorage.setItem('userRole', 'student');
+      localStorage.setItem('userEmail', trimmedEmail);
+      localStorage.setItem('studentName', trimmedEmail.split('@')[0]);
+      localStorage.setItem('userRole', role);
 
       // Small delay to ensure localStorage is written
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Redirect to dashboard
-      navigate('/student/dashboard');
+      // Redirect based on role
+      const redirectUrl = role === 'system_admin' ? '/admin/dashboard' : '/student/dashboard';
+      navigate(redirectUrl);
     } catch (err) {
       setError('Failed to log in. Please try again.');
     } finally {
@@ -215,7 +219,7 @@ export default function Login() {
 
             {/* Student ID Input */}
             <div>
-              <Label className="text-sm font-medium text-slate-700 block mb-1.5">Student ID</Label>
+              <Label className="text-sm font-medium text-slate-700 block mb-1.5">User ID</Label>
               <Input
                 placeholder="STU-2021-00001"
                 value={studentId}
@@ -223,14 +227,14 @@ export default function Login() {
                 disabled={isLoading || isGoogleLoading}
                 className="w-full"
               />
-              <p className="text-xs text-slate-500 mt-1">Format: STU-YYYY-NNNNN</p>
+              <p className="text-xs text-slate-500 mt-1">Format: STU-YYYY-NNNNN or ADM-YYYY-NNNNN</p>
             </div>
 
             {/* Email Input */}
             <div>
               <Label className="text-sm font-medium text-slate-700 block mb-1.5">Email Address</Label>
               <Input
-                placeholder="juan.delacruz@university.edu"
+                placeholder="juan.delacruz@gbox.adnu.edu.ph"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

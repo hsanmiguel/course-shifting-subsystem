@@ -3,11 +3,15 @@ import { Card, Input, Label } from '@heroui/react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { AuditLogEntry } from '@/types';
+import { authService } from '@/services/auth';
 import { getAuditLogs, mockAuditLogs } from './api';
 
 export default function AuditLogs() {
   const [logs, setLogs] = useState<AuditLogEntry[]>(mockAuditLogs);
   const [search, setSearch] = useState('');
+  const currentUser = authService.getCurrentUser();
+  const displayName = currentUser?.name || 'System Administrator';
+  const displayId = currentUser?.id || 'ADM-2021-00001';
 
   useEffect(() => {
     getAuditLogs().then(setLogs);
@@ -29,8 +33,8 @@ export default function AuditLogs() {
       title="Audit Logs"
       subtitle="All application status changes and system events"
       userRole="admin"
-      userName="Juan Dela Cruz"
-      studentId="STU-2021-08831"
+      userName={displayName}
+      studentId={displayId}
     >
       <div className="mx-auto max-w-7xl space-y-6">
         <Card className="rounded-md border border-slate-200 bg-white shadow-sm">

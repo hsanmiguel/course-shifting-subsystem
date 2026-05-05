@@ -68,7 +68,7 @@ export default function StudentDashboard() {
 
       await apiClient.submitApplication({
         student_id: studentId,
-        student_name: localStorage.getItem('fullName') || 'Student',
+        student_name: localStorage.getItem('studentName') || 'Student',
         current_program: formData.currentCourses,
         target_program: formData.desiredCourses,
         reason_for_shifting: formData.reason,

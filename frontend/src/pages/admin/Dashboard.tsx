@@ -13,6 +13,7 @@ import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { StatCard } from '@/components/atoms/StatCard';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { AdminAnalytics } from '@/types';
+import { authService } from '@/services/auth';
 import { buildAdminAnalytics, getAdminAnalytics, mockAdminApplications, mockAuditLogs } from './api';
 
 const fallbackAnalytics = buildAdminAnalytics(mockAdminApplications, mockAuditLogs);
@@ -33,13 +34,17 @@ export default function AdminDashboard() {
     [analytics.statusBreakdown],
   );
 
+  const currentUser = authService.getCurrentUser();
+  const displayName = currentUser?.name || 'System Administrator';
+  const displayId = currentUser?.id || 'ADM-2021-00001';
+
   return (
     <SidebarLayout
       title="Admin Dashboard"
       subtitle="Application analytics and operational review metrics"
       userRole="admin"
-      userName="Juan Dela Cruz"
-      studentId="STU-2021-08831"
+      userName={displayName}
+      studentId={displayId}
     >
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

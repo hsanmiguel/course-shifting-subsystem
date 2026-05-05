@@ -4,11 +4,15 @@ import { AlertTriangle, ArrowRight, Check, Clock3, ShieldCheck } from 'lucide-re
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { AdminApplication } from '@/types';
+import { authService } from '@/services/auth';
 import { getAdminApplications, mockAdminApplications } from './api';
 
 export default function AllApplications() {
   const [applications, setApplications] = useState<AdminApplication[]>(mockAdminApplications);
   const [selectedId, setSelectedId] = useState(mockAdminApplications[0]?.id);
+  const currentUser = authService.getCurrentUser();
+  const displayName = currentUser?.name || 'System Administrator';
+  const displayId = currentUser?.id || 'ADM-2021-00001';
   const selectedApplication = useMemo(
     () => applications.find((application) => application.id === selectedId) ?? applications[0],
     [applications, selectedId],
@@ -26,8 +30,8 @@ export default function AllApplications() {
       title="Pending Applications"
       subtitle={`${applications.length} awaiting review`}
       userRole="admin"
-      userName="Juan Dela Cruz"
-      studentId="STU-2021-08831"
+      userName={displayName}
+      studentId={displayId}
     >
       <div className="grid min-h-[calc(100vh-12rem)] gap-6 xl:grid-cols-[20rem_1fr]">
         <Card className="h-fit overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">

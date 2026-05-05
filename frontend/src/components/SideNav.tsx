@@ -51,7 +51,7 @@ export const SideNav = ({
   const adminNavItems = [
     {
       label: 'Dashboard',
-      href: '/admin',
+      href: '/admin/dashboard',
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {

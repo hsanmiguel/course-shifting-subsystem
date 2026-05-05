@@ -7,6 +7,9 @@ import StudentDashboard from "@/pages/student/Dashboard";
 import Applications from "@/pages/student/Applications";
 import CourseEquivalencies from "@/pages/student/CourseEquivalencies";
 import ApplicationForm from "@/pages/student/ApplicationForm";
+import AdminDashboard from "@/pages/admin/Dashboard";
+import AllApplications from "@/pages/admin/AllApplications";
+import AuditLogs from "@/pages/admin/AuditLogs";
 
 function getDashboardRoute(role?: string) {
   const userRole = role || localStorage.getItem('userRole') || localStorage.getItem('role') || 'student';
@@ -28,7 +31,11 @@ function getDashboardRoute(role?: string) {
 }
 
 function ProtectedRoute({ element }: { element: React.ReactNode }) {
-  const isAuthenticated = !!localStorage.getItem('authToken');
+  // Check if authToken exists AND all required user data is in localStorage
+  const token = localStorage.getItem('authToken');
+  const userId = localStorage.getItem('studentId');
+  const userRole = localStorage.getItem('userRole');
+  const isAuthenticated = !!(token && userId && userRole);
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -58,6 +65,9 @@ function App() {
       <Route element={<ProtectedRoute element={<Applications />} />} path="/student/applications" />
       <Route element={<ProtectedRoute element={<CourseEquivalencies />} />} path="/student/course-equivalencies" />
       <Route element={<ProtectedRoute element={<ApplicationForm />} />} path="/student/application-form" />
+      <Route element={<ProtectedRoute element={<AdminDashboard />} />} path="/admin/dashboard" />
+      <Route element={<ProtectedRoute element={<AllApplications />} />} path="/admin/applications" />
+      <Route element={<ProtectedRoute element={<AuditLogs />} />} path="/admin/audit-logs" />
       <Route element={<Navigate to="/login" replace />} path="*" />
     </Routes>
   );
