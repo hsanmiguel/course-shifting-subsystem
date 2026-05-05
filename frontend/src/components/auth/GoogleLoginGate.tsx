@@ -71,7 +71,22 @@ export function GoogleLoginGate({ children }: { children: React.ReactNode }) {
   const { user, loginWithGoogleCredential } = useAuth();
   const [isLoading, setIsLoading] = useState(!user);
   const [error, setError] = useState<string | null>(null);
+  const [lastAuthState, setLastAuthState] = useState(!!user);
   const buttonRef = useRef<HTMLDivElement | null>(null);
+
+  // Reset Google state when user logs out
+  useEffect(() => {
+    if (lastAuthState && !user) {
+      // User just logged out - reset module-level state
+      googleScriptPromise = null;
+      initializedClientId = null;
+      hasPrompted = false;
+      credentialHandler = null;
+      setError(null);
+      setIsLoading(true);
+    }
+    setLastAuthState(!!user);
+  }, [user, lastAuthState]);
 
   useEffect(() => {
     if (user) {

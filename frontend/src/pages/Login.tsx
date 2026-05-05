@@ -91,7 +91,9 @@ export default function Login() {
         callback: handleGoogleResponse,
       });
 
-      if (googleButtonRef.current && !googleButtonRef.current.hasChildNodes()) {
+      if (googleButtonRef.current) {
+        // Clear any existing children before rendering
+        googleButtonRef.current.replaceChildren();
         window.google?.accounts.id.renderButton(googleButtonRef.current, {
           theme: 'outline',
           size: 'large',
