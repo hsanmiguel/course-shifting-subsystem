@@ -4,11 +4,11 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 
 async function getJson<T>(path: string, fallback: T): Promise<T> {
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    const token = localStorage.getItem('authToken') || import.meta.env.VITE_AUTH_TOKEN;
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const response = await fetch(`${API_BASE_URL}${path}`, { headers });
 
     if (!response.ok) return fallback;
 

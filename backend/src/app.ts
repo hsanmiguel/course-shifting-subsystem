@@ -11,6 +11,7 @@ import { MemoryApplicationRepository } from "./repositories/memory/memory-applic
 import { MemoryAuditRepository } from "./repositories/memory/memory-audit-repository.js";
 import { createCssRouter } from "./routes/css-routes.js";
 import { createAuthRouter } from "./routes/auth-routes.js";
+import { createAdminRouter } from "./routes/admin-routes.js";
 import { EquivalencyService } from "./services/equivalency-service.js";
 import { ShiftingService } from "./services/shifting-service.js";
 import { MockSubsystemClients } from "./integrations/mock-subsystem-clients.js";
@@ -52,6 +53,8 @@ export function createApp() {
 
   app.use("/api/auth", createAuthRouter(db));
   app.use("/api/css", createCssRouter(shiftingService));
+  app.use(createAdminRouter(shiftingService));
+  app.use("/api", createAdminRouter(shiftingService));
   app.use(notFoundHandler);
   app.use(errorHandler);
 

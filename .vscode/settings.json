@@ -26,4 +26,5 @@
             ]
         }
     }
+    "python.terminal.useEnvFile": true
 }
