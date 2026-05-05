@@ -237,21 +237,6 @@ export default function Login() {
               />
             </div>
 
-            {/* Info Box */}
-            <div className="flex gap-3 rounded-lg bg-blue-50 border border-blue-200 p-4">
-              <div className="text-blue-600 flex-shrink-0 mt-0.5">
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="text-sm text-blue-900">
-                <p className="font-medium">Development Mode</p>
-                <p className="mt-1 text-xs">
-                  Use any valid student ID format to proceed. This is for development purposes only.
-                </p>
-              </div>
-            </div>
-
             {/* Dev Login Button */}
             <button
               type="submit"
@@ -286,27 +271,6 @@ export default function Login() {
               {!isGoogleLoading && (
                 <div ref={googleButtonRef} className="flex justify-center" />
               )}
-            </div>
-
-            {/* Demo IDs */}
-            <div className="pt-4 border-t border-slate-200">
-              <p className="text-xs text-slate-600 font-medium mb-2">Demo Student IDs:</p>
-              <div className="space-y-2">
-                {['STU-2021-00001', 'STU-2022-00002', 'STU-2023-00003'].map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => {
-                      setStudentId(id);
-                      setError(null);
-                    }}
-                    disabled={isLoading || isGoogleLoading}
-                    className="w-full text-left px-3 py-2 rounded border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-sm text-slate-700 font-mono transition"
-                  >
-                    {id}
-                  </button>
-                ))}
-              </div>
             </div>
           </form>
         </Card>
