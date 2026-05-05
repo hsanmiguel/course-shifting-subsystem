@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Card } from '@heroui/react';
+import { Card, Spinner } from '@heroui/react';
 import {
   AlertTriangle,
   BarChart3,
@@ -12,17 +12,57 @@ import {
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { StatCard } from '@/components/atoms/StatCard';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
-import { AdminAnalytics } from '@/types';
+import { AdminAnalytics, ShiftingApplication } from '@/types';
 import { authService } from '@/services/auth';
-import { buildAdminAnalytics, getAdminAnalytics, mockAdminApplications, mockAuditLogs } from './api';
+import { buildAdminAnalytics, getAdminApplications, getAuditLogs } from './api';
 
-const fallbackAnalytics = buildAdminAnalytics(mockAdminApplications, mockAuditLogs);
+const emptyAnalytics: AdminAnalytics = {
+  totalApplications: 0,
+  pendingReview: 0,
+  approvedApplications: 0,
+  rejectedApplications: 0,
+  slaBreaches: 0,
+  averageGwa: 0,
+  averageUnits: 0,
+  targetProgramDemand: [],
+  statusBreakdown: [],
+  recentEvents: [],
+};
+
+function formatDate(date?: string | null) {
+  if (!date) return 'Not available';
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString();
+}
 
 export default function AdminDashboard() {
-  const [analytics, setAnalytics] = useState<AdminAnalytics>(fallbackAnalytics);
+  const [analytics, setAnalytics] = useState<AdminAnalytics>(emptyAnalytics);
+  const [applications, setApplications] = useState<ShiftingApplication[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getAdminAnalytics().then(setAnalytics);
+    async function loadDashboard() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const [applicationData, auditLogs] = await Promise.all([
+          getAdminApplications(),
+          getAuditLogs().catch(() => []),
+        ]);
+
+        setApplications(applicationData);
+        setAnalytics(buildAdminAnalytics(applicationData, auditLogs));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load admin dashboard');
+        setApplications([]);
+        setAnalytics(emptyAnalytics);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadDashboard();
   }, []);
 
   const largestProgramCount = useMemo(
@@ -37,6 +77,12 @@ export default function AdminDashboard() {
   const currentUser = authService.getCurrentUser();
   const displayName = currentUser?.name || 'System Administrator';
   const displayId = currentUser?.id || 'ADM-2021-00001';
+  const recentApplications = useMemo(
+    () => [...applications]
+      .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime())
+      .slice(0, 6),
+    [applications],
+  );
 
   return (
     <SidebarLayout
@@ -47,6 +93,22 @@ export default function AdminDashboard() {
       studentId={displayId}
     >
       <div className="mx-auto max-w-7xl space-y-8">
+        {isLoading && (
+          <Card className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-center gap-3 text-slate-600">
+              <Spinner size="sm" />
+              <span>Loading applications from Firebase...</span>
+            </div>
+          </Card>
+        )}
+
+        {error && (
+          <Card className="rounded-md border border-red-200 bg-red-50 p-5 shadow-sm">
+            <p className="font-semibold text-red-900">Unable to load Firebase applications</p>
+            <p className="mt-1 text-sm text-red-700">{error}</p>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title="Total Applications"
@@ -85,6 +147,11 @@ export default function AdminDashboard() {
                 <BarChart3 className="h-5 w-5 text-slate-500" />
               </div>
               <div className="space-y-4">
+                {analytics.targetProgramDemand.length === 0 && (
+                  <p className="rounded-md border border-dashed border-slate-300 p-5 text-center text-sm text-slate-500">
+                    No submitted applications yet.
+                  </p>
+                )}
                 {analytics.targetProgramDemand.map((item) => (
                   <div key={item.program} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
@@ -142,6 +209,11 @@ export default function AdminDashboard() {
                 <p className="mt-1 text-sm text-slate-500">Current workflow distribution.</p>
               </div>
               <div className="space-y-4">
+                {analytics.statusBreakdown.length === 0 && (
+                  <p className="rounded-md border border-dashed border-slate-300 p-5 text-center text-sm text-slate-500">
+                    No workflow status data yet.
+                  </p>
+                )}
                 {analytics.statusBreakdown.map((item) => (
                   <div key={item.status} className="grid grid-cols-[8rem_1fr_2rem] items-center gap-3">
                     <StatusBadge status={item.status} />
@@ -161,18 +233,24 @@ export default function AdminDashboard() {
           <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
             <Card.Content className="gap-5 p-6">
               <div>
-                <h2 className="text-xl font-semibold text-slate-950">Recent Audit Events</h2>
-                <p className="mt-1 text-sm text-slate-500">Latest application and system actions.</p>
+                <h2 className="text-xl font-semibold text-slate-950">Submitted Applications</h2>
+                <p className="mt-1 text-sm text-slate-500">Latest applications sent by students.</p>
               </div>
               <div className="divide-y divide-slate-200">
-                {analytics.recentEvents.map((event) => (
-                  <div key={event.id} className="grid gap-3 py-4 md:grid-cols-[8rem_1fr_auto] md:items-center">
-                    <p className="text-sm font-medium text-slate-500">{event.timestamp}</p>
+                {recentApplications.length === 0 && (
+                  <p className="py-8 text-center text-sm text-slate-500">No student applications have been submitted yet.</p>
+                )}
+                {recentApplications.map((application) => (
+                  <div key={application.application_id} className="grid gap-3 py-4 md:grid-cols-[8rem_1fr_auto] md:items-center">
+                    <p className="text-sm font-medium text-slate-500">{formatDate(application.submitted_at)}</p>
                     <div>
-                      <p className="font-semibold text-slate-950">{event.applicationId}</p>
-                      <p className="mt-1 text-sm text-slate-600">{event.details}</p>
+                      <p className="font-semibold text-slate-950">{application.student_name}</p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {application.current_program} to {application.target_program}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">{application.application_id}</p>
                     </div>
-                    <StatusBadge status={event.action} />
+                    <StatusBadge status={application.status} />
                   </div>
                 ))}
               </div>

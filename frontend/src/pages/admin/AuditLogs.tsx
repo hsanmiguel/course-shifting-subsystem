@@ -1,20 +1,35 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Card, Input, Label } from '@heroui/react';
+import { Card, Input, Label, Spinner } from '@heroui/react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { AuditLogEntry } from '@/types';
 import { authService } from '@/services/auth';
-import { getAuditLogs, mockAuditLogs } from './api';
+import { getAuditLogs } from './api';
 
 export default function AuditLogs() {
-  const [logs, setLogs] = useState<AuditLogEntry[]>(mockAuditLogs);
+  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [search, setSearch] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const currentUser = authService.getCurrentUser();
   const displayName = currentUser?.name || 'System Administrator';
   const displayId = currentUser?.id || 'ADM-2021-00001';
 
   useEffect(() => {
-    getAuditLogs().then(setLogs);
+    async function loadLogs() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        setLogs(await getAuditLogs());
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load audit logs');
+        setLogs([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadLogs();
   }, []);
 
   const filteredLogs = useMemo(() => {
@@ -37,6 +52,22 @@ export default function AuditLogs() {
       studentId={displayId}
     >
       <div className="mx-auto max-w-7xl space-y-6">
+        {isLoading && (
+          <Card className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-center gap-3 text-slate-600">
+              <Spinner size="sm" />
+              <span>Loading audit logs...</span>
+            </div>
+          </Card>
+        )}
+
+        {error && (
+          <Card className="rounded-md border border-red-200 bg-red-50 p-5 shadow-sm">
+            <p className="font-semibold text-red-900">Unable to load audit logs</p>
+            <p className="mt-1 text-sm text-red-700">{error}</p>
+          </Card>
+        )}
+
         <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
           <Card.Content className="p-5">
             <div className="grid gap-4 lg:grid-cols-[2fr_1fr_1fr]">
@@ -79,6 +110,13 @@ export default function AuditLogs() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
+                  {!isLoading && filteredLogs.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-8 text-center text-sm text-slate-500">
+                        No audit logs found.
+                      </td>
+                    </tr>
+                  )}
                   {filteredLogs.map((log) => (
                     <tr key={log.id} className="bg-white align-middle">
                       <td className="px-5 py-5 font-medium text-slate-600">{log.timestamp}</td>
@@ -95,7 +133,7 @@ export default function AuditLogs() {
                         <p className="mt-1 text-xs text-slate-500">{log.actorRole}</p>
                       </td>
                       <td className="px-5 py-5">
-                        <p className="leading-6 text-slate-700">{log.details}</p>
+                        <p className="whitespace-pre-line leading-6 text-slate-700">{log.details}</p>
                         <p className="mt-2 text-xs text-slate-500">
                           {log.fromStatus} &gt; {log.toStatus}
                         </p>
