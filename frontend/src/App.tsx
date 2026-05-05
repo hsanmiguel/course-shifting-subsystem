@@ -1,19 +1,64 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 import IndexPage from "@/pages/index";
+import Login from "@/pages/Login";
 import StudentDashboard from "@/pages/student/Dashboard";
 import Applications from "@/pages/student/Applications";
 import CourseEquivalencies from "@/pages/student/CourseEquivalencies";
 import ApplicationForm from "@/pages/student/ApplicationForm";
 
+function getDashboardRoute(role?: string) {
+  const userRole = role || localStorage.getItem('userRole') || localStorage.getItem('role') || 'student';
+  
+  switch (userRole) {
+    case 'student':
+      return '/student/dashboard';
+    case 'adviser':
+      return '/adviser/dashboard';
+    case 'department_head':
+      return '/department/dashboard';
+    case 'registrar':
+      return '/registrar/dashboard';
+    case 'system_admin':
+      return '/admin/dashboard';
+    default:
+      return '/student/dashboard';
+  }
+}
+
+function ProtectedRoute({ element }: { element: React.ReactNode }) {
+  const isAuthenticated = !!localStorage.getItem('authToken');
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{element}</>;
+}
+
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
   return (
     <Routes>
-      <Route element={<IndexPage />} path="/" />
-      <Route element={<StudentDashboard />} path="/student/dashboard" />
-      <Route element={<Applications />} path="/student/applications" />
-      <Route element={<CourseEquivalencies />} path="/student/course-equivalencies" />
-      <Route element={<ApplicationForm />} path="/student/application-form" />
+      <Route element={<Login />} path="/login" />
+      <Route element={<ProtectedRoute element={<Navigate to={getDashboardRoute()} replace />} />} path="/" />
+      <Route element={<ProtectedRoute element={<IndexPage />} />} path="/home" />
+      <Route element={<ProtectedRoute element={<StudentDashboard />} />} path="/student/dashboard" />
+      <Route element={<ProtectedRoute element={<StudentDashboard />} />} path="/student" />
+      <Route element={<ProtectedRoute element={<Applications />} />} path="/student/applications" />
+      <Route element={<ProtectedRoute element={<CourseEquivalencies />} />} path="/student/course-equivalencies" />
+      <Route element={<ProtectedRoute element={<ApplicationForm />} />} path="/student/application-form" />
+      <Route element={<Navigate to="/login" replace />} path="*" />
     </Routes>
   );
 }

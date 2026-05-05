@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { SideNav } from '@/components/SideNav';
+import { authService } from '@/services/auth';
 
 interface SidebarLayoutProps {
   children: ReactNode;
@@ -13,12 +14,16 @@ export const SidebarLayout = ({
   children,
   title,
   userRole = 'student',
-  userName = 'John Doe',
-  studentId = 'STU-2021-0001',
+  userName,
+  studentId,
 }: SidebarLayoutProps) => {
+  const currentUser = authService.getCurrentUser();
+  const displayName = userName || currentUser?.name || 'Student';
+  const displayStudentId = studentId || currentUser?.id || '';
+
   const handleLogout = () => {
-    console.log('Logout');
-    // Add logout logic here
+    authService.logout();
+    window.location.href = '/';
   };
 
   return (
@@ -26,8 +31,8 @@ export const SidebarLayout = ({
       {/* Sidebar Navigation */}
       <SideNav
         userRole={userRole}
-        userName={userName}
-        studentId={studentId}
+        userName={displayName}
+        studentId={displayStudentId}
         onLogout={handleLogout}
       />
 

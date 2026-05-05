@@ -1,71 +1,103 @@
-import { siteConfig } from "@/config/site";
-import { title, subtitle } from "@/components/primitives";
-import { GithubIcon } from "@/components/icons";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DefaultLayout from "@/layouts/default";
-import { Button, Card } from "@heroui/react";
-import { Link } from "react-router-dom";
+import { Card } from "@heroui/react";
+import { Spinner } from "@heroui/react";
 
 export default function IndexPage() {
+  const navigate = useNavigate();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Get user role from localStorage
+    const role = localStorage.getItem('userRole') || localStorage.getItem('role') || 'student';
+    setUserRole(role);
+    setIsLoading(false);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <DefaultLayout>
+        <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10 min-h-screen">
+          <Spinner />
+        </section>
+      </DefaultLayout>
+    );
+  }
+
+  const getDashboardRoute = () => {
+    switch (userRole) {
+      case 'student':
+        return '/student/dashboard';
+      case 'adviser':
+        return '/adviser/dashboard';
+      case 'department_head':
+        return '/department/dashboard';
+      case 'registrar':
+        return '/registrar/dashboard';
+      case 'system_admin':
+        return '/admin/dashboard';
+      default:
+        return '/student/dashboard';
+    }
+  };
+
+  const getDashboardLabel = () => {
+    switch (userRole) {
+      case 'student':
+        return 'Student Dashboard';
+      case 'adviser':
+        return 'Adviser Dashboard';
+      case 'department_head':
+        return 'Department Head Dashboard';
+      case 'registrar':
+        return 'Registrar Dashboard';
+      case 'system_admin':
+        return 'Admin Dashboard';
+      default:
+        return 'Dashboard';
+    }
+  };
+
   return (
     <DefaultLayout>
-      <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
-        <div className="inline-block max-w-lg text-center justify-center">
-          <span className={title()}>Make&nbsp;</span>
-          <span className={title({ color: "blue" })}>beautiful&nbsp;</span>
-          <br />
-          <span className={title()}>
-            websites regardless of your design experience.
-          </span>
-          <div className={subtitle({ class: "mt-4" })}>
-            Beautiful, fast and modern React UI library.
-          </div>
-        </div>
+      <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10 min-h-screen">
+        <div className="max-w-md w-full">
+          <Card className="p-8">
+            <div className="space-y-6">
+              <div className="text-center">
+                <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                  IAE System
+                </h1>
+                <p className="text-sm text-slate-600">
+                  Course Shifting Subsystem
+                </p>
+              </div>
 
-        <div className="flex gap-3">
-          <a
-            className="button button--primary button--md rounded-full"
-            href={siteConfig.links.docs}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Documentation
-          </a>
-          <a
-            className="button button--tertiary button--md rounded-full"
-            href={siteConfig.links.github}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <GithubIcon size={20} />
-            GitHub
-          </a>
-        </div>
+              <div className="text-center">
+                <p className="text-slate-600 mb-4">
+                  Welcome back! Access your dashboard to manage applications and track your course shifts.
+                </p>
+              </div>
 
-        <div className="mt-8">
-          <div className="flex items-center gap-2 rounded-xl bg-surface shadow-surface px-4 py-2">
-            <pre className="text-sm font-medium font-mono">
-              Get started by editing{" "}
-              <code className="px-2 py-1 h-fit font-mono font-normal inline whitespace-nowrap rounded-sm bg-accent/20 text-accent text-sm">
-                pages/index.tsx
-              </code>
-            </pre>
-          </div>
-        </div>
+              <button
+                onClick={() => navigate(getDashboardRoute())}
+                className="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
+              >
+                Go to {getDashboardLabel()}
+              </button>
 
-        {/* Course Shifting System Section */}
-        <div className="mt-12 max-w-lg">
-          <Card>
-            <Card.Content className="gap-4 p-8">
-              <h3 className="text-2xl font-bold text-gray-900">Course Shifting Subsystem</h3>
-              <p className="text-gray-600">
-                Manage your course shifts, track applications, and view status in real-time.
-              </p>
-              <Link to="/student/dashboard">
-                <Button variant="primary" fullWidth>
-                  Go to Student Dashboard
-                </Button>
-              </Link>
-            </Card.Content>
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  navigate('/login');
+                }}
+                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold transition"
+              >
+                Logout
+              </button>
+            </div>
           </Card>
         </div>
       </section>

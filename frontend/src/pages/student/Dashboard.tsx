@@ -1,86 +1,24 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Card, Button, Input, Label, TextArea } from '@heroui/react';
+import { useMemo, useState, useEffect } from 'react';
+import { Card, Button, Input, Label, TextArea, Spinner } from '@heroui/react';
 import {
   CalendarClock,
   CheckCircle2,
   ClipboardCheck,
   FilePenLine,
   FileText,
-  Send,
   X,
 } from 'lucide-react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { StatCard } from '@/components/atoms/StatCard';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { ApplicationCard } from '@/components/molecules/ApplicationCard';
-import { ShiftingApplication, CourseEquivalency, Notification } from '@/types';
-
-const activeApplication: ShiftingApplication = {
-  id: 'CSR-2024-001',
-  studentId: 'STU-2021-0001',
-  studentName: 'John Doe',
-  studentEmail: 'john@example.com',
-  currentCourses: 'BS Computer Science',
-  desiredCourses: 'BS Information Technology',
-  reason: 'I want to align my program with software implementation, networking, and systems administration career goals.',
-  status: 'under_review',
-  createdAt: '2024-02-01',
-  updatedAt: '2024-02-05',
-  submittedAt: '2024-02-01',
-};
-
-const mockEquivalencies: CourseEquivalency[] = [
-  {
-    id: '1',
-    currentSubject: 'CS101',
-    currentSubjectCode: 'CS101',
-    equivalentSubject: 'IT101',
-    equivalentSubjectCode: 'IT101',
-    credits: 3,
-    status: 'approved',
-  },
-  {
-    id: '2',
-    currentSubject: 'MATH101',
-    currentSubjectCode: 'MATH101',
-    equivalentSubject: 'MATH101',
-    equivalentSubjectCode: 'MATH101',
-    credits: 4,
-    status: 'pending',
-  },
-  {
-    id: '3',
-    currentSubject: 'CS102',
-    currentSubjectCode: 'CS102',
-    equivalentSubject: 'IT102',
-    equivalentSubjectCode: 'IT102',
-    credits: 3,
-    status: 'approved',
-  },
-];
-
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'info',
-    title: 'Request Under Review',
-    message: 'Your course shifting request is being reviewed by the department.',
-    date: '2024-02-05',
-  },
-  {
-    id: '2',
-    type: 'success',
-    title: 'Course Equivalency Updated',
-    message: 'Two course equivalencies have been marked as approved.',
-    date: '2024-02-04',
-  },
-];
+import { ShiftingApplication, CourseEquivalency } from '@/types';
+import { useApplications } from '@/hooks';
+import { apiClient } from '@/services/api-client';
 
 export default function StudentDashboard() {
-  const [isStudentLoggedIn] = useState(true);
-  const [application, setApplication] = useState<ShiftingApplication | null>(activeApplication);
   const [selectedApp, setSelectedApp] = useState<ShiftingApplication | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -88,14 +26,20 @@ export default function StudentDashboard() {
     desiredCourses: '',
     reason: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const hasPendingRequest = application?.status === 'submitted' || application?.status === 'under_review';
+  // Get student ID from auth token or localStorage (you'll need to implement proper auth)
+  const studentId = localStorage.getItem('studentId') || '';
+  const { applications, stats, loading, error, refetch } = useApplications(studentId);
+  const application = applications[0] || null;
+
+  const hasPendingRequest = application?.status === 'under_review' || application?.status === 'pending';
 
   const reviewProgress = useMemo(() => {
     if (!application) return 'Not started';
-    if (application.status === 'approved' || application.status === 'completed') return 'Approved';
+    if (application.status === 'approved') return 'Approved';
     if (application.status === 'rejected') return 'Closed';
-    if (application.status === 'draft') return 'Draft';
     return 'In review';
   }, [application]);
 
@@ -112,27 +56,35 @@ export default function StudentDashboard() {
     setShowModal(true);
   };
 
-  const handleSubmitApplication = () => {
-    if (formData.currentCourses && formData.desiredCourses && formData.reason) {
-      const submittedDate = new Date().toISOString().split('T')[0];
-      const newApp: ShiftingApplication = {
-        id: `CSR-${Date.now()}`,
-        studentId: 'STU-2021-0001',
-        studentName: 'John Doe',
-        studentEmail: 'john@example.com',
-        status: 'submitted',
-        createdAt: submittedDate,
-        updatedAt: submittedDate,
-        submittedAt: submittedDate,
-        ...formData,
-      };
+  const handleSubmitApplication = async () => {
+    if (!formData.currentCourses || !formData.desiredCourses || !formData.reason || !studentId) {
+      setSubmitError('Please fill in all fields and ensure you are logged in');
+      return;
+    }
 
-      setApplication(newApp);
+    try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+
+      await apiClient.submitApplication({
+        student_id: studentId,
+        student_name: localStorage.getItem('fullName') || 'Student',
+        current_program: formData.currentCourses,
+        target_program: formData.desiredCourses,
+        reason_for_shifting: formData.reason,
+      });
+
       setShowModal(false);
+      setFormData({ currentCourses: '', desiredCourses: '', reason: '' });
+      await refetch();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to submit application');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  if (!isStudentLoggedIn) {
+  if (!studentId) {
     return (
       <SidebarLayout title="Student Dashboard">
         <div className="py-12 text-center">
@@ -142,14 +94,34 @@ export default function StudentDashboard() {
     );
   }
 
+  if (loading) {
+    return (
+      <SidebarLayout title="Student Dashboard">
+        <div className="flex justify-center py-12">
+          <Spinner size="lg" />
+        </div>
+      </SidebarLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <SidebarLayout title="Student Dashboard">
+        <Card className="bg-red-50 border border-red-200 p-4">
+          <p className="text-red-700">Error: {error}</p>
+        </Card>
+      </SidebarLayout>
+    );
+  }
+
   return (
     <SidebarLayout title="Student Dashboard">
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard title="Active Request" value={application ? '1' : '0'} description={application?.id ?? 'No request on file'} icon={<FileText className="h-6 w-6" />} />
+          <StatCard title="Active Request" value={application ? '1' : '0'} description={application?.application_id ?? 'No request on file'} icon={<FileText className="h-6 w-6" />} />
           <StatCard title="Review Status" value={reviewProgress} description={application ? 'Current workflow stage' : 'Ready for submission'} icon={<CalendarClock className="h-6 w-6" />} />
-          <StatCard title="Approved Matches" value={mockEquivalencies.filter((item) => item.status === 'approved').length} description="Course equivalencies" icon={<CheckCircle2 className="h-6 w-6" />} />
-          <StatCard title="Pending Items" value={mockEquivalencies.filter((item) => item.status === 'pending').length} description="Awaiting validation" icon={<ClipboardCheck className="h-6 w-6" />} />
+          <StatCard title="Total Applications" value={String(stats.total)} description="All submissions" icon={<CheckCircle2 className="h-6 w-6" />} />
+          <StatCard title="Pending Items" value={String(stats.pending)} description="Awaiting review" icon={<ClipboardCheck className="h-6 w-6" />} />
         </div>
 
         {hasPendingRequest && (
@@ -199,32 +171,14 @@ export default function StudentDashboard() {
                 <h2 className="text-xl font-semibold text-slate-950">Course Equivalencies</h2>
                 <p className="mt-1 text-sm text-slate-500">Subjects aligned to the requested destination course.</p>
               </div>
-              <div className="overflow-hidden rounded-md border border-slate-200">
-                <table className="w-full table-fixed text-sm">
-                  <thead className="bg-slate-100 text-slate-600">
-                    <tr>
-                      <th className="w-[18%] px-3 py-3 text-left font-semibold">Current Subject</th>
-                      <th className="w-[16%] px-3 py-3 text-left font-semibold">Current Code</th>
-                      <th className="w-[34%] px-3 py-3 text-left font-semibold">Equivalent Subject</th>
-                      <th className="w-[12%] px-3 py-3 text-center font-semibold">Credits</th>
-                      <th className="w-[20%] px-3 py-3 text-left font-semibold">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {mockEquivalencies.map((eq) => (
-                      <tr key={eq.id} className="bg-white">
-                        <td className="px-3 py-4 font-medium text-slate-950">{eq.currentSubject}</td>
-                        <td className="px-3 py-4 font-mono text-slate-600">{eq.currentSubjectCode}</td>
-                        <td className="px-3 py-4 text-slate-700">{eq.equivalentSubjectCode} - {eq.equivalentSubject}</td>
-                        <td className="px-3 py-4 text-center font-semibold text-slate-950">{eq.credits}</td>
-                        <td className="px-3 py-4">
-                          <StatusBadge status={eq.status} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {selectedApp && (
+                <EquivalencyTable applicationId={selectedApp.application_id} />
+              )}
+              {!selectedApp && (
+                <div className="text-center p-4 text-slate-500">
+                  Select an application to view course equivalencies
+                </div>
+              )}
             </Card.Content>
           </Card>
 
@@ -235,18 +189,22 @@ export default function StudentDashboard() {
                 <p className="mt-1 text-sm text-slate-500">Updates for your current request.</p>
               </div>
               <div className="space-y-3">
-                {mockNotifications.map((notif) => (
-                  <div key={notif.id} className="rounded-md border border-slate-200 p-4">
+                {application ? (
+                  <div className="rounded-md border border-slate-200 p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="font-semibold text-slate-950">{notif.title}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">{notif.message}</p>
-                        <p className="mt-3 text-xs font-medium text-slate-500">{notif.date}</p>
+                        <p className="font-semibold text-slate-950">Request Updated</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                          Your request is currently {application.status.replace('_', ' ')}
+                        </p>
+                        <p className="mt-3 text-xs font-medium text-slate-500">{application.submitted_at}</p>
                       </div>
-                      <StatusBadge status={notif.type} />
+                      <StatusBadge status={application.status} />
                     </div>
                   </div>
-                ))}
+                ) : (
+                  <div className="text-center p-4 text-slate-500">No activity yet</div>
+                )}
               </div>
             </Card.Content>
           </Card>
@@ -270,16 +228,16 @@ export default function StudentDashboard() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current Course</p>
-                      <p className="mt-2 font-semibold text-slate-950">{selectedApp.currentCourses}</p>
+                      <p className="mt-2 font-semibold text-slate-950">{selectedApp.current_program}</p>
                     </div>
                     <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Desired Course</p>
-                      <p className="mt-2 font-semibold text-slate-950">{selectedApp.desiredCourses}</p>
+                      <p className="mt-2 font-semibold text-slate-950">{selectedApp.target_program}</p>
                     </div>
                   </div>
                   <div className="rounded-md border border-slate-200 p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Reason</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-700">{selectedApp.reason}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">{selectedApp.reason_for_shifting}</p>
                   </div>
                   <div className="rounded-md border border-slate-200 p-4">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
@@ -307,31 +265,113 @@ export default function StudentDashboard() {
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="reason" className="font-semibold text-slate-900">Reason for Shifting</Label>
+                    <Label htmlFor="reason" className="font-semibold text-slate-900">Reason for Transfer</Label>
                     <TextArea
                       id="reason"
-                      placeholder="Explain why you want to shift courses"
+                      placeholder="Explain your reasons for transferring..."
                       value={formData.reason}
                       onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                      rows={4}
                     />
                   </div>
+                  {submitError && (
+                    <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+                      {submitError}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-6 py-4">
-              <Button variant="secondary" onPress={() => setShowModal(false)}>
-                Cancel
-              </Button>
+            <div className="flex gap-3 border-t border-slate-200 pt-6">
               {!selectedApp && (
-                <Button variant="primary" onPress={handleSubmitApplication}>
-                  <Send className="h-4 w-4" />
-                  Submit Request
+                <Button
+                  variant="primary"
+                  onPress={handleSubmitApplication}
+                  isPending={isSubmitting}
+                  className="flex-1"
+                >
+                  Submit Application
                 </Button>
               )}
+              <Button
+                variant="secondary"
+                onPress={() => setShowModal(false)}
+                className="flex-1"
+              >
+                Close
+              </Button>
             </div>
           </Card>
         </div>
       )}
+
+      <EquivalencyTable applicationId={application?.application_id} />
     </SidebarLayout>
+  );
+}
+
+// Helper component to display equivalencies
+function EquivalencyTable({ applicationId }: { applicationId?: string }) {
+  const [equivalencies, setEquivalencies] = useState<CourseEquivalency[]>([]);
+  const [loading, setLoading] = useState(!!applicationId);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!applicationId) return;
+    
+    const fetchEquivalencies = async () => {
+      try {
+        setLoading(true);
+        const data = await apiClient.getEquivalency(applicationId);
+        setEquivalencies(Array.isArray(data) ? data : (data.credited_subjects || []));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load equivalencies');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEquivalencies();
+  }, [applicationId]);
+
+  if (!applicationId) return null;
+  if (loading) return <Spinner size="sm" />;
+  if (error) return <div className="text-red-600 text-sm">{error}</div>;
+
+  return (
+    <div className="overflow-hidden rounded-md border border-slate-200">
+      <table className="w-full table-fixed text-sm">
+        <thead className="bg-slate-100 text-slate-600">
+          <tr>
+            <th className="w-[18%] px-3 py-3 text-left font-semibold">Current Subject</th>
+            <th className="w-[16%] px-3 py-3 text-left font-semibold">Current Code</th>
+            <th className="w-[34%] px-3 py-3 text-left font-semibold">Equivalent Subject</th>
+            <th className="w-[12%] px-3 py-3 text-center font-semibold">Credits</th>
+            <th className="w-[20%] px-3 py-3 text-left font-semibold">Status</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-200">
+          {equivalencies.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="px-3 py-4 text-center text-slate-500">
+                No course equivalencies found
+              </td>
+            </tr>
+          ) : (
+            equivalencies.map((eq, idx) => (
+              <tr key={`${eq.subject_code}-${idx}`} className="bg-white">
+                <td className="px-3 py-4 font-medium text-slate-950">{eq.subject_code}</td>
+                <td className="px-3 py-4 font-mono text-slate-600">{eq.subject_code}</td>
+                <td className="px-3 py-4 text-slate-700">{eq.equivalent_to}</td>
+                <td className="px-3 py-4 text-center font-semibold text-slate-950">{eq.units}</td>
+                <td className="px-3 py-4">
+                  <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 border border-green-200">{eq.status}</span>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }

@@ -12,6 +12,8 @@ export const ApplicationCard = ({
   application,
   onView,
 }: ApplicationCardProps) => {
+  const submittedAt = new Date(application.submitted_at).toLocaleDateString();
+
   return (
     <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
       <Card.Content className="gap-5 p-6">
@@ -23,7 +25,7 @@ export const ApplicationCard = ({
               </span>
               <div>
                 <p className="text-lg font-semibold text-slate-950">Course Shifting Request</p>
-                <p className="text-sm text-slate-500">{application.id} · {application.studentId}</p>
+                <p className="text-sm text-slate-500">{application.application_id} - {application.student_id}</p>
               </div>
             </div>
           </div>
@@ -33,33 +35,31 @@ export const ApplicationCard = ({
         <div className="grid gap-4 md:grid-cols-3">
           <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Student</p>
-            <p className="mt-2 font-semibold text-slate-950">{application.studentName}</p>
-            <p className="text-sm text-slate-600">{application.studentEmail}</p>
+            <p className="mt-2 font-semibold text-slate-950">{application.student_name}</p>
+            <p className="text-sm text-slate-600">{application.student_id}</p>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current Courses</p>
-            <p className="mt-2 font-medium text-slate-950">{application.currentCourses}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current Program</p>
+            <p className="mt-2 font-medium text-slate-950">{application.current_program}</p>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Desired Courses</p>
-            <p className="mt-2 font-medium text-slate-950">{application.desiredCourses}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Target Program</p>
+            <p className="mt-2 font-medium text-slate-950">{application.target_program}</p>
           </div>
         </div>
 
         <div className="rounded-md border border-slate-200 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Reason</p>
-          <p className="mt-2 text-sm leading-6 text-slate-700">{application.reason}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-700">{application.reason_for_shifting}</p>
         </div>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-500">
             <span className="inline-flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
-              Submitted {application.submittedAt ?? application.createdAt}
+              Submitted {submittedAt}
             </span>
-            <div>
-              Updated {application.updatedAt}
-            </div>
+            {application.decision_at && <div>Decision {new Date(application.decision_at).toLocaleDateString()}</div>}
           </div>
           {onView && (
             <Button size="sm" variant="primary" onPress={() => onView(application)}>
