@@ -1,4 +1,4 @@
-import { Card, Button, TextField, Input, TextArea, Checkbox, Label } from '@heroui/react';
+import { Card, Button, TextField, Input, TextArea, Checkbox, Label, FieldError } from '@heroui/react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { useState } from 'react';
 import { apiClient } from '@/services/api-client';
@@ -33,11 +33,44 @@ const checkboxIndicatorClass =
 
 const checkboxLabelClass = 'font-medium text-slate-800';
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const fieldOrder = [
+  'fullName',
+  'studentId',
+  'email',
+  'phone',
+  'currentDept',
+  'currentYear',
+  'gpa',
+  'credits',
+  'desiredDept',
+  'targetSemester',
+  'motivation',
+  'acknowledgements',
+];
+
+const fieldFocusIds: Record<string, string> = {
+  fullName: 'full-name',
+  studentId: 'student-id',
+  email: 'email',
+  phone: 'phone',
+  currentDept: 'current-program',
+  currentYear: 'current-year',
+  gpa: 'gpa',
+  credits: 'credits',
+  desiredDept: 'desired-program',
+  targetSemester: 'target-semester',
+  motivation: 'motivation',
+  acknowledgements: 'information-is-accurate',
+};
+
 export default function ApplicationForm() {
   const initialProfile = getStudentProfileFromAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [submittedApplication, setSubmittedApplication] = useState<ShiftingApplication | null>(null);
   const [documents, setDocuments] = useState({
@@ -64,50 +97,80 @@ export default function ApplicationForm() {
     motivation: '',
   });
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  const validateForm = () => {
+    const nextErrors: Record<string, string> = {};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.studentId) {
-      setError('Student ID is required. Please log in.');
-      return;
+    if (!formData.fullName.trim()) nextErrors.fullName = 'Full name is required.';
+    if (!formData.studentId.trim()) nextErrors.studentId = 'Student ID is required. Please log in again.';
+    if (!formData.email.trim()) {
+      nextErrors.email = 'Email is required.';
+    } else if (!emailPattern.test(formData.email.trim())) {
+      nextErrors.email = 'Enter a valid email address.';
     }
-
-    if (!formData.fullName.trim()) {
-      setError('Full name is required.');
-      return;
-    }
-
-    if (!formData.currentDept.trim()) {
-      setError('Current department is required.');
-      return;
-    }
-
-    if (!formData.desiredDept.trim()) {
-      setError('Desired department is required.');
-      return;
-    }
-
-    if (!formData.motivation.trim()) {
-      setError('Reason for transfer is required.');
-      return;
-    }
+    if (!formData.phone.trim()) nextErrors.phone = 'Phone number is required.';
+    if (!formData.currentDept.trim()) nextErrors.currentDept = 'Current program is required.';
+    if (!formData.currentYear.trim()) nextErrors.currentYear = 'Current year is required.';
+    if (!formData.gpa.trim()) nextErrors.gpa = 'Current GPA is required.';
+    if (!formData.credits.trim()) nextErrors.credits = 'Completed credits are required.';
+    if (!formData.desiredDept.trim()) nextErrors.desiredDept = 'Desired program is required.';
+    if (!formData.targetSemester.trim()) nextErrors.targetSemester = 'Target start semester is required.';
+    if (!formData.motivation.trim()) nextErrors.motivation = 'Reason for transfer is required.';
 
     if (
       !acknowledgements.informationIsAccurate ||
       !acknowledgements.understandsTransferPolicies ||
       !acknowledgements.agreesToTerms
     ) {
-      setError('Please accept all acknowledgments before submitting.');
+      nextErrors.acknowledgements = 'Please accept all acknowledgments before submitting.';
+    }
+
+    return nextErrors;
+  };
+
+  const clearFieldError = (field: string) => {
+    setFieldErrors(prev => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    clearFieldError(field);
+  };
+
+  const scrollToFirstError = (errors: Record<string, string>) => {
+    const firstField = fieldOrder.find(field => errors[field]);
+    if (!firstField) return;
+
+    requestAnimationFrame(() => {
+      const element = document.getElementById(fieldFocusIds[firstField]);
+
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      if (element instanceof HTMLElement && !element.hasAttribute('disabled')) {
+        element.focus({ preventScroll: true });
+      }
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const nextErrors = validateForm();
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError('Please complete the highlighted fields before submitting.');
+      scrollToFirstError(nextErrors);
       return;
     }
 
     try {
       setIsSubmitting(true);
       setError(null);
+      setFieldErrors({});
 
       const response = await apiClient.submitApplication({
         student_id: formData.studentId,
@@ -203,38 +266,45 @@ export default function ApplicationForm() {
 
         {/* Form Section */}
         <Card className="rounded-md p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form noValidate onSubmit={handleSubmit} className="space-y-6">
             {/* Personal Information Section */}
             <div>
               <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField isRequired className="w-full" name="fullName">
+                <TextField isRequired isInvalid={!!fieldErrors.fullName} className="w-full" name="fullName">
                   <Label>Full Name</Label>
                   <Input 
+                    id="full-name"
                     placeholder="Enter your full name"
                     value={formData.fullName}
                     onChange={(e) => handleChange('fullName', e.target.value)}
                   />
+                  {fieldErrors.fullName && <FieldError>{fieldErrors.fullName}</FieldError>}
                 </TextField>
-                <TextField isDisabled className="w-full" name="studentId" value={formData.studentId}>
+                <TextField isDisabled isInvalid={!!fieldErrors.studentId} className="w-full" name="studentId" value={formData.studentId}>
                   <Label>Student ID</Label>
-                  <Input placeholder="STU-YYYY-0000" />
+                  <Input id="student-id" placeholder="STU-YYYY-0000" />
+                  {fieldErrors.studentId && <FieldError>{fieldErrors.studentId}</FieldError>}
                 </TextField>
-                <TextField isRequired className="w-full" name="email" type="email">
+                <TextField isRequired isInvalid={!!fieldErrors.email} className="w-full" name="email" type="email">
                   <Label>Email</Label>
                   <Input 
+                    id="email"
                     placeholder="your.email@gbox.ph"
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                   />
+                  {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
                 </TextField>
-                <TextField isRequired className="w-full" name="phone">
+                <TextField isRequired isInvalid={!!fieldErrors.phone} className="w-full" name="phone">
                   <Label>Phone Number</Label>
                   <Input 
+                    id="phone"
                     placeholder="+1 (555) 123-4567"
                     value={formData.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}
                   />
+                  {fieldErrors.phone && <FieldError>{fieldErrors.phone}</FieldError>}
                 </TextField>
               </div>
             </div>
@@ -243,25 +313,30 @@ export default function ApplicationForm() {
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Current Program</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField isRequired className="w-full" name="currentDept">
+                <TextField isRequired isInvalid={!!fieldErrors.currentDept} className="w-full" name="currentDept">
                   <Label>Current Program</Label>
                   <Input 
+                    id="current-program"
                     placeholder="Enter your current program"
                     value={formData.currentDept}
                     onChange={(e) => handleChange('currentDept', e.target.value)}
                   />
+                  {fieldErrors.currentDept && <FieldError>{fieldErrors.currentDept}</FieldError>}
                 </TextField>
-                <TextField isRequired className="w-full" name="currentYear">
+                <TextField isRequired isInvalid={!!fieldErrors.currentYear} className="w-full" name="currentYear">
                   <Label>Current Year</Label>
                   <Input 
+                    id="current-year"
                     placeholder="e.g., 1st year, 2nd year"
                     value={formData.currentYear}
                     onChange={(e) => handleChange('currentYear', e.target.value)}
                   />
+                  {fieldErrors.currentYear && <FieldError>{fieldErrors.currentYear}</FieldError>}
                 </TextField>
-                <TextField isRequired className="w-full" name="gpa" type="number">
+                <TextField isRequired isInvalid={!!fieldErrors.gpa} className="w-full" name="gpa" type="number">
                   <Label>Current GPA</Label>
                   <Input 
+                    id="gpa"
                     placeholder="0.00" 
                     step="0.01" 
                     min="0" 
@@ -269,14 +344,17 @@ export default function ApplicationForm() {
                     value={formData.gpa}
                     onChange={(e) => handleChange('gpa', e.target.value)}
                   />
+                  {fieldErrors.gpa && <FieldError>{fieldErrors.gpa}</FieldError>}
                 </TextField>
-                <TextField isRequired className="w-full" name="credits" type="number">
+                <TextField isRequired isInvalid={!!fieldErrors.credits} className="w-full" name="credits" type="number">
                   <Label>Completed Credits</Label>
                   <Input 
+                    id="credits"
                     placeholder="0"
                     value={formData.credits}
                     onChange={(e) => handleChange('credits', e.target.value)}
                   />
+                  {fieldErrors.credits && <FieldError>{fieldErrors.credits}</FieldError>}
                 </TextField>
               </div>
             </div>
@@ -285,21 +363,25 @@ export default function ApplicationForm() {
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Transfer Program Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField isRequired className="w-full" name="desiredDept">
+                <TextField isRequired isInvalid={!!fieldErrors.desiredDept} className="w-full" name="desiredDept">
                   <Label>Desired Program</Label>
                   <Input 
+                    id="desired-program"
                     placeholder="Enter desired program"
                     value={formData.desiredDept}
                     onChange={(e) => handleChange('desiredDept', e.target.value)}
                   />
+                  {fieldErrors.desiredDept && <FieldError>{fieldErrors.desiredDept}</FieldError>}
                 </TextField>
-                <TextField isRequired className="w-full" name="targetSemester">
+                <TextField isRequired isInvalid={!!fieldErrors.targetSemester} className="w-full" name="targetSemester">
                   <Label>Target Start Semester</Label>
                   <Input 
+                    id="target-semester"
                     placeholder="Fall 2024"
                     value={formData.targetSemester}
                     onChange={(e) => handleChange('targetSemester', e.target.value)}
                   />
+                  {fieldErrors.targetSemester && <FieldError>{fieldErrors.targetSemester}</FieldError>}
                 </TextField>
               </div>
             </div>
@@ -307,14 +389,16 @@ export default function ApplicationForm() {
             {/* Motivation Section */}
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Application Statement</h3>
-              <TextField isRequired className="w-full" name="motivation">
+              <TextField isRequired isInvalid={!!fieldErrors.motivation} className="w-full" name="motivation">
                 <Label>Why are you applying for transfer?</Label>
                 <TextArea 
+                  id="motivation"
                   placeholder="Explain your reasons for transferring and your career goals..." 
                   rows={5}
                   value={formData.motivation}
                   onChange={(e) => handleChange('motivation', e.target.value)}
                 />
+                {fieldErrors.motivation && <FieldError>{fieldErrors.motivation}</FieldError>}
               </TextField>
             </div>
 
@@ -382,7 +466,10 @@ export default function ApplicationForm() {
                   id="information-is-accurate"
                   className="items-start gap-3"
                   isSelected={acknowledgements.informationIsAccurate}
-                  onChange={(isSelected) => setAcknowledgements(prev => ({ ...prev, informationIsAccurate: isSelected }))}
+                  onChange={(isSelected) => {
+                    setAcknowledgements(prev => ({ ...prev, informationIsAccurate: isSelected }));
+                    clearFieldError('acknowledgements');
+                  }}
                 >
                   <Checkbox.Control className={checkboxControlClass}>
                     <Checkbox.Indicator className={checkboxIndicatorClass} />
@@ -397,7 +484,10 @@ export default function ApplicationForm() {
                   id="understands-transfer-policies"
                   className="items-start gap-3"
                   isSelected={acknowledgements.understandsTransferPolicies}
-                  onChange={(isSelected) => setAcknowledgements(prev => ({ ...prev, understandsTransferPolicies: isSelected }))}
+                  onChange={(isSelected) => {
+                    setAcknowledgements(prev => ({ ...prev, understandsTransferPolicies: isSelected }));
+                    clearFieldError('acknowledgements');
+                  }}
                 >
                   <Checkbox.Control className={checkboxControlClass}>
                     <Checkbox.Indicator className={checkboxIndicatorClass} />
@@ -412,7 +502,10 @@ export default function ApplicationForm() {
                   id="agrees-to-terms"
                   className="items-start gap-3"
                   isSelected={acknowledgements.agreesToTerms}
-                  onChange={(isSelected) => setAcknowledgements(prev => ({ ...prev, agreesToTerms: isSelected }))}
+                  onChange={(isSelected) => {
+                    setAcknowledgements(prev => ({ ...prev, agreesToTerms: isSelected }));
+                    clearFieldError('acknowledgements');
+                  }}
                 >
                   <Checkbox.Control className={checkboxControlClass}>
                     <Checkbox.Indicator className={checkboxIndicatorClass} />
@@ -423,6 +516,9 @@ export default function ApplicationForm() {
                     </Label>
                   </Checkbox.Content>
                 </Checkbox>
+                {fieldErrors.acknowledgements && (
+                  <p className="text-sm font-medium text-red-600">{fieldErrors.acknowledgements}</p>
+                )}
               </div>
             </div>
 
