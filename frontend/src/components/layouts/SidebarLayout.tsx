@@ -5,6 +5,7 @@ import { authService } from '@/services/auth';
 interface SidebarLayoutProps {
   children: ReactNode;
   title: string;
+  subtitle?: string;
   userRole?: 'student' | 'admin';
   userName?: string;
   studentId?: string;
@@ -13,6 +14,7 @@ interface SidebarLayoutProps {
 export const SidebarLayout = ({
   children,
   title,
+  subtitle = 'Submit and track your course shifting request',
   userRole = 'student',
   userName,
   studentId,
@@ -43,7 +45,7 @@ export const SidebarLayout = ({
           <div className="px-8 py-4">
             <div>
               <h1 className="text-xl font-semibold text-slate-950">{title}</h1>
-              <p className="text-sm text-slate-500 mt-1">Submit and track your course shifting request</p>
+              <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
             </div>
           </div>
         </div>

@@ -1,13 +1,13 @@
-import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@heroui/react';
 import {
+  ClipboardCheck,
   ClipboardList,
   FilePenLine,
   GitCompareArrows,
   LayoutDashboard,
   LogOut,
-  Menu,
+  ScrollText,
 } from 'lucide-react';
 
 interface SideNavProps {
@@ -23,9 +23,7 @@ export const SideNav = ({
   studentId = 'STU-2021-0001',
   onLogout = () => console.log('Logout'),
 }: SideNavProps) => {
-  // Keep sidebar open for students (static), allow toggle for admin
   const isStudent = userRole === 'student';
-  const [isOpen, setIsOpen] = useState(!isStudent);
 
   const studentNavItems = [
     {
@@ -52,9 +50,19 @@ export const SideNav = ({
 
   const adminNavItems = [
     {
-      label: 'Admin Dashboard',
-      href: '/admin/dashboard',
+      label: 'Dashboard',
+      href: '/admin',
       icon: <LayoutDashboard className="h-5 w-5" />,
+    },
+    {
+      label: 'All Applications',
+      href: '/admin/applications',
+      icon: <ClipboardCheck className="h-5 w-5" />,
+    },
+    {
+      label: 'Audit Logs',
+      href: '/admin/audit-logs',
+      icon: <ScrollText className="h-5 w-5" />,
     },
   ];
 
@@ -62,33 +70,8 @@ export const SideNav = ({
 
   return (
     <>
-      {/* Mobile Menu Button - Hidden for students (static sidebar) */}
-      {!isStudent && (
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="fixed top-4 left-4 z-50 rounded-md bg-slate-900 p-2 text-white"
-        >
-          <Menu className="h-6 w-6" />
-        </button>
-      )}
-
-      {/* Overlay for mobile */}
-      {!isStudent && isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* Sidebar - Always visible for students */}
       <aside
-        className={`${
-          isStudent 
-            ? 'fixed left-0 top-0 h-screen w-64' 
-            : `fixed lg:relative top-0 left-0 h-screen w-64 transition-all duration-300 ${
-                !isOpen ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'
-              } z-40`
-        } bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl flex flex-col`}
+        className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl"
       >
         {/* Header */}
         <div className="p-6 border-b border-slate-700">
@@ -102,7 +85,6 @@ export const SideNav = ({
             <NavLink
               key={item.href}
               to={item.href}
-              onClick={() => !isStudent && setIsOpen(false)}
               className={({ isActive }) =>
                 `group flex items-center gap-3 rounded-md border-l-2 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                   isActive
