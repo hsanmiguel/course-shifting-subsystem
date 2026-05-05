@@ -1,27 +1,59 @@
 import { Card, Button, TextField, Input, TextArea, Checkbox, Label } from '@heroui/react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { apiClient } from '@/services/api-client';
+import { authService } from '@/services/auth';
 import { SubmissionSuccess } from '@/components/atoms/SubmissionSuccess';
 import { SubmissionError } from '@/components/atoms/SubmissionError';
 import { SubmissionPending } from '@/components/atoms/SubmissionPending';
 import { SubmissionConfirmationDialog } from '@/components/molecules/SubmissionConfirmationDialog';
-import { Upload, X } from 'lucide-react';
 import type { ShiftingApplication } from '@/types';
 
+function getStudentIdFromToken() {
+  const token = apiClient.getAuthToken();
+  const [prefix, role, studentId] = token.split(':');
+  return prefix === 'dev' && role === 'student' ? studentId : '';
+}
+
+function getStudentProfileFromAuth() {
+  const user = authService.getCurrentUser();
+
+  return {
+    fullName: user?.name || localStorage.getItem('studentName') || '',
+    studentId: user?.id || getStudentIdFromToken() || localStorage.getItem('studentId') || '',
+    email: user?.email || localStorage.getItem('userEmail') || '',
+  };
+}
+
+const checkboxControlClass =
+  'size-5 shrink-0 overflow-hidden rounded border-2 border-slate-500 bg-white shadow-sm transition before:rounded-[inherit] data-[selected=true]:border-blue-600 data-[selected=true]:bg-blue-600 data-[focus-visible=true]:ring-2 data-[focus-visible=true]:ring-blue-500 data-[focus-visible=true]:ring-offset-2';
+
+const checkboxIndicatorClass =
+  'flex size-full items-center justify-center text-white [&>svg]:size-3.5 [&>svg]:stroke-[3]';
+
+const checkboxLabelClass = 'font-medium text-slate-800';
+
 export default function ApplicationForm() {
+  const initialProfile = getStudentProfileFromAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [submittedApplication, setSubmittedApplication] = useState<ShiftingApplication | null>(null);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [documents, setDocuments] = useState({
+    officialTranscripts: true,
+    recommendationLetter: true,
+    additionalEssays: false,
+  });
+  const [acknowledgements, setAcknowledgements] = useState({
+    informationIsAccurate: false,
+    understandsTransferPolicies: false,
+    agreesToTerms: false,
+  });
   const [formData, setFormData] = useState({
-    fullName: '',
-    studentId: '',
-    email: '',
+    fullName: initialProfile.fullName,
+    studentId: initialProfile.studentId,
+    email: initialProfile.email,
     phone: '',
     currentDept: '',
     currentYear: '',
@@ -32,78 +64,8 @@ export default function ApplicationForm() {
     motivation: '',
   });
 
-  // Load user data from localStorage on mount
-  useEffect(() => {
-    const fullName = localStorage.getItem('fullName') || '';
-    const studentId = localStorage.getItem('studentId') || '';
-    const email = localStorage.getItem('email') || '';
-
-    setFormData(prev => ({
-      ...prev,
-      fullName,
-      studentId,
-      email,
-    }));
-  }, []);
-
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const validateFile = (file: File): string | null => {
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    
-    if (!allowedTypes.includes(file.type)) {
-      return `${file.name} has invalid format. Allowed: PDF, DOC, DOCX`;
-    }
-    if (file.size > maxSize) {
-      return `${file.name} exceeds 5MB limit`;
-    }
-    return null;
-  };
-
-  const handleFiles = (files: FileList | null) => {
-    if (!files) return;
-
-    const newFiles: File[] = [];
-    const errors: string[] = [];
-
-    Array.from(files).forEach(file => {
-      const validationError = validateFile(file);
-      if (validationError) {
-        errors.push(validationError);
-      } else {
-        newFiles.push(file);
-      }
-    });
-
-    if (errors.length > 0) {
-      setError(errors.join('; '));
-    }
-
-    setUploadedFiles(prev => [...prev, ...newFiles]);
-  };
-
-  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    handleFiles(e.dataTransfer.files);
-  };
-
-  const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -134,6 +96,15 @@ export default function ApplicationForm() {
       return;
     }
 
+    if (
+      !acknowledgements.informationIsAccurate ||
+      !acknowledgements.understandsTransferPolicies ||
+      !acknowledgements.agreesToTerms
+    ) {
+      setError('Please accept all acknowledgments before submitting.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setError(null);
@@ -141,9 +112,21 @@ export default function ApplicationForm() {
       const response = await apiClient.submitApplication({
         student_id: formData.studentId,
         student_name: formData.fullName.trim(),
+        student_email: formData.email.trim() || null,
+        phone_number: formData.phone.trim() || null,
         current_program: formData.currentDept.trim(),
+        current_year: formData.currentYear.trim() || null,
         target_program: formData.desiredDept.trim(),
+        target_semester: formData.targetSemester.trim() || null,
         reason_for_shifting: formData.motivation.trim(),
+        self_reported_gpa: formData.gpa || null,
+        self_reported_credits: formData.credits || null,
+        official_transcripts: documents.officialTranscripts,
+        recommendation_letter: documents.recommendationLetter,
+        additional_essays: documents.additionalEssays,
+        information_is_accurate: acknowledgements.informationIsAccurate,
+        understands_transfer_policies: acknowledgements.understandsTransferPolicies,
+        agrees_to_terms: acknowledgements.agreesToTerms,
       });
 
       setSubmittedApplication(response);
@@ -152,10 +135,12 @@ export default function ApplicationForm() {
       
       // Reset form after successful submission
       setTimeout(() => {
+        const profile = getStudentProfileFromAuth();
+
         setFormData({
-          fullName: '',
-          studentId: localStorage.getItem('studentId') || '',
-          email: '',
+          fullName: profile.fullName,
+          studentId: profile.studentId,
+          email: profile.email,
           phone: '',
           currentDept: '',
           currentYear: '',
@@ -164,6 +149,16 @@ export default function ApplicationForm() {
           desiredDept: '',
           targetSemester: '',
           motivation: '',
+        });
+        setDocuments({
+          officialTranscripts: true,
+          recommendationLetter: true,
+          additionalEssays: false,
+        });
+        setAcknowledgements({
+          informationIsAccurate: false,
+          understandsTransferPolicies: false,
+          agreesToTerms: false,
         });
         setSubmitSuccess(false);
       }, 3000);
@@ -228,7 +223,7 @@ export default function ApplicationForm() {
                 <TextField isRequired className="w-full" name="email" type="email">
                   <Label>Email</Label>
                   <Input 
-                    placeholder="your.email@university.edu"
+                    placeholder="your.email@gbox.ph"
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                   />
@@ -249,9 +244,9 @@ export default function ApplicationForm() {
               <h3 className="text-lg font-semibold mb-4">Current Program</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <TextField isRequired className="w-full" name="currentDept">
-                  <Label>Current Department</Label>
+                  <Label>Current Program</Label>
                   <Input 
-                    placeholder="Enter your current department"
+                    placeholder="Enter your current program"
                     value={formData.currentDept}
                     onChange={(e) => handleChange('currentDept', e.target.value)}
                   />
@@ -259,7 +254,7 @@ export default function ApplicationForm() {
                 <TextField isRequired className="w-full" name="currentYear">
                   <Label>Current Year</Label>
                   <Input 
-                    placeholder="e.g., First Year, Second Year"
+                    placeholder="e.g., 1st year, 2nd year"
                     value={formData.currentYear}
                     onChange={(e) => handleChange('currentYear', e.target.value)}
                   />
@@ -291,9 +286,9 @@ export default function ApplicationForm() {
               <h3 className="text-lg font-semibold mb-4">Transfer Program Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <TextField isRequired className="w-full" name="desiredDept">
-                  <Label>Desired Department</Label>
+                  <Label>Desired Program</Label>
                   <Input 
-                    placeholder="Enter desired department"
+                    placeholder="Enter desired program"
                     value={formData.desiredDept}
                     onChange={(e) => handleChange('desiredDept', e.target.value)}
                   />
@@ -327,68 +322,55 @@ export default function ApplicationForm() {
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Supporting Documents</h3>
               <div className="space-y-4">
-                <div
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                  className={`cursor-pointer rounded-md border-2 border-dashed p-6 text-center transition ${
-                    dragActive
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-300 hover:border-blue-400'
-                  }`}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                <div className="cursor-pointer rounded-md border-2 border-dashed border-gray-300 p-6 text-center transition hover:border-blue-400">
                   <p className="text-sm text-gray-600">
-                    Drag and drop your documents here or click to browse
+                    📎 Drag and drop your documents here or click to browse
                   </p>
                   <p className="text-xs text-gray-400 mt-2">
                     Accepted formats: PDF, DOC, DOCX (Max 5MB each)
                   </p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => handleFiles(e.target.files)}
-                    className="hidden"
-                  />
                 </div>
-
-                {/* Uploaded Files List */}
-                {uploadedFiles.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-700">
-                      Uploaded Files ({uploadedFiles.length})
-                    </p>
-                    {uploadedFiles.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 p-3"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <Upload className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-slate-900 truncate">
-                              {file.name}
-                            </p>
-                            <p className="text-xs text-slate-600">
-                              {(file.size / 1024).toFixed(1)} KB
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeFile(index)}
-                          className="ml-2 text-slate-400 hover:text-red-600 transition flex-shrink-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Checkbox
+                    id="official-transcripts"
+                    className="items-start gap-3"
+                    isSelected={documents.officialTranscripts}
+                    onChange={(isSelected) => setDocuments(prev => ({ ...prev, officialTranscripts: isSelected }))}
+                  >
+                    <Checkbox.Control className={checkboxControlClass}>
+                      <Checkbox.Indicator className={checkboxIndicatorClass} />
+                    </Checkbox.Control>
+                    <Checkbox.Content>
+                      <Label className={checkboxLabelClass} htmlFor="official-transcripts">Official transcripts</Label>
+                    </Checkbox.Content>
+                  </Checkbox>
+                  <Checkbox
+                    id="recommendation-letter"
+                    className="items-start gap-3"
+                    isSelected={documents.recommendationLetter}
+                    onChange={(isSelected) => setDocuments(prev => ({ ...prev, recommendationLetter: isSelected }))}
+                  >
+                    <Checkbox.Control className={checkboxControlClass}>
+                      <Checkbox.Indicator className={checkboxIndicatorClass} />
+                    </Checkbox.Control>
+                    <Checkbox.Content>
+                      <Label className={checkboxLabelClass} htmlFor="recommendation-letter">Letter of recommendation</Label>
+                    </Checkbox.Content>
+                  </Checkbox>
+                  <Checkbox
+                    id="additional-essays"
+                    className="items-start gap-3"
+                    isSelected={documents.additionalEssays}
+                    onChange={(isSelected) => setDocuments(prev => ({ ...prev, additionalEssays: isSelected }))}
+                  >
+                    <Checkbox.Control className={checkboxControlClass}>
+                      <Checkbox.Indicator className={checkboxIndicatorClass} />
+                    </Checkbox.Control>
+                    <Checkbox.Content>
+                      <Label className={checkboxLabelClass} htmlFor="additional-essays">Additional essays</Label>
+                    </Checkbox.Content>
+                  </Checkbox>
+                </div>
               </div>
             </div>
 
@@ -396,20 +378,50 @@ export default function ApplicationForm() {
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Acknowledgments</h3>
               <div className="space-y-3">
-                <Checkbox isRequired>
-                  <span className="text-sm">
-                    I confirm that all information provided is true and accurate
-                  </span>
+                <Checkbox
+                  id="information-is-accurate"
+                  className="items-start gap-3"
+                  isSelected={acknowledgements.informationIsAccurate}
+                  onChange={(isSelected) => setAcknowledgements(prev => ({ ...prev, informationIsAccurate: isSelected }))}
+                >
+                  <Checkbox.Control className={checkboxControlClass}>
+                    <Checkbox.Indicator className={checkboxIndicatorClass} />
+                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Label className={checkboxLabelClass} htmlFor="information-is-accurate">
+                      I confirm that all information provided is true and accurate
+                    </Label>
+                  </Checkbox.Content>
                 </Checkbox>
-                <Checkbox isRequired>
-                  <span className="text-sm">
-                    I understand the transfer policies and course requirements
-                  </span>
+                <Checkbox
+                  id="understands-transfer-policies"
+                  className="items-start gap-3"
+                  isSelected={acknowledgements.understandsTransferPolicies}
+                  onChange={(isSelected) => setAcknowledgements(prev => ({ ...prev, understandsTransferPolicies: isSelected }))}
+                >
+                  <Checkbox.Control className={checkboxControlClass}>
+                    <Checkbox.Indicator className={checkboxIndicatorClass} />
+                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Label className={checkboxLabelClass} htmlFor="understands-transfer-policies">
+                      I understand the transfer policies and course requirements
+                    </Label>
+                  </Checkbox.Content>
                 </Checkbox>
-                <Checkbox isRequired>
-                  <span className="text-sm">
-                    I agree to the terms and conditions of the course transfer program
-                  </span>
+                <Checkbox
+                  id="agrees-to-terms"
+                  className="items-start gap-3"
+                  isSelected={acknowledgements.agreesToTerms}
+                  onChange={(isSelected) => setAcknowledgements(prev => ({ ...prev, agreesToTerms: isSelected }))}
+                >
+                  <Checkbox.Control className={checkboxControlClass}>
+                    <Checkbox.Indicator className={checkboxIndicatorClass} />
+                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Label className={checkboxLabelClass} htmlFor="agrees-to-terms">
+                      I agree to the terms and conditions of the course transfer program
+                    </Label>
+                  </Checkbox.Content>
                 </Checkbox>
               </div>
             </div>
