@@ -46,9 +46,12 @@ export function useApplications(studentId?: string): UseApplicationsResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchApplications = async () => {
+  const fetchApplications = async (options: { silent?: boolean } = {}) => {
     try {
-      setLoading(true);
+      const showLoading = !options.silent && applications.length === 0;
+      if (showLoading) {
+        setLoading(true);
+      }
       setError(null);
       const response = await apiClient.listApplications({ studentId });
       const apps = sortApplicationsNewestFirst(response.data || []);
@@ -70,8 +73,45 @@ export function useApplications(studentId?: string): UseApplicationsResult {
   };
 
   useEffect(() => {
+    if (!studentId) {
+      setApplications([]);
+      setStats({ total: 0, pending: 0, approved: 0, rejected: 0 });
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     fetchApplications();
   }, [studentId]);
+
+  useEffect(() => {
+    if (!studentId) {
+      return;
+    }
+
+    const refreshOnFocus = () => {
+      void fetchApplications({ silent: true });
+    };
+
+    const refreshOnVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchApplications({ silent: true });
+      }
+    };
+
+    const refreshInterval = window.setInterval(() => {
+      void fetchApplications({ silent: true });
+    }, 15000);
+
+    window.addEventListener('focus', refreshOnFocus);
+    document.addEventListener('visibilitychange', refreshOnVisibilityChange);
+
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener('focus', refreshOnFocus);
+      document.removeEventListener('visibilitychange', refreshOnVisibilityChange);
+    };
+  }, [studentId, applications.length]);
 
   return {
     applications,

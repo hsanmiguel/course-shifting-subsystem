@@ -42,7 +42,7 @@ export default function StudentDashboard() {
   const reviewProgress = useMemo(() => {
     if (!application) return 'Not started';
     if (application.status === 'approved') return 'Approved';
-    if (application.status === 'rejected') return 'Closed';
+    if (application.status === 'rejected') return 'Rejected';
     return 'In review';
   }, [application]);
 

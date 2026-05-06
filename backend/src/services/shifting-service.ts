@@ -24,6 +24,8 @@ const ACTIVE_APPLICATION_STATUSES: ApplicationStatus[] = [
   "pending_cms_update"
 ];
 
+const MAX_COUNTABLE_APPLICATIONS_PER_STUDENT = 1;
+
 export class ShiftingService {
   constructor(
     private readonly applications: ApplicationRepository,
@@ -34,9 +36,9 @@ export class ShiftingService {
 
   async submitApplication(input: ShiftApplicationInput, actorId: string) {
     const currentCount = await this.applications.countSubmittedThisSemester(input.student_id);
-    if (currentCount >= env.maxApplicationsPerSemester) {
-      throw new AppError(429, "RATE_LIMIT_EXCEEDED", "Submission blocked: maximum application attempts reached for the semester.", {
-        max_allowed: env.maxApplicationsPerSemester
+    if (currentCount >= MAX_COUNTABLE_APPLICATIONS_PER_STUDENT) {
+      throw new AppError(429, "RATE_LIMIT_EXCEEDED", "Submission blocked: each student may only have one active application at a time.", {
+        max_allowed: MAX_COUNTABLE_APPLICATIONS_PER_STUDENT
       });
     }
 

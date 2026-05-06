@@ -42,12 +42,15 @@ export class FirestoreApplicationRepository implements ApplicationRepository {
     }
 
     const snapshot = await query.get();
-    return snapshot.docs.map((doc) => doc.data() as ShiftApplication);
+    return snapshot.docs
+      .map((doc) => doc.data() as ShiftApplication)
+      .sort((left, right) => new Date(right.submitted_at).getTime() - new Date(left.submitted_at).getTime());
   }
 
   async countSubmittedThisSemester(studentId: string): Promise<number> {
     const snapshot = await this.db.collection("css_applications").where("student_id", "==", studentId).get();
-    return snapshot.size;
+    const docs = snapshot.docs.map((d) => d.data() as ShiftApplication);
+    return docs.filter((application) => application.status !== 'rejected' && application.status !== 'cancelled').length;
   }
 
   async getNextWaitlisted(targetProgram: string): Promise<ShiftApplication | null> {
