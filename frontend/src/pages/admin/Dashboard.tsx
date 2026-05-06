@@ -15,6 +15,7 @@ import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { AdminAnalytics, ShiftingApplication } from '@/types';
 import { authService } from '@/services/auth';
 import { buildAdminAnalytics, getAdminApplications, getAuditLogs } from './api';
+import { formatProgramName } from '@/constants/programs';
 
 const emptyAnalytics: AdminAnalytics = {
   totalApplications: 0,
@@ -246,7 +247,7 @@ export default function AdminDashboard() {
                     <div>
                       <p className="font-semibold text-slate-950">{application.student_name}</p>
                       <p className="mt-1 text-sm text-slate-600">
-                        {application.current_program} to {application.target_program}
+                        {formatProgramName(application.current_program)} to {formatProgramName(application.target_program)}
                       </p>
                       <p className="mt-1 text-xs text-slate-500">{application.application_id}</p>
                     </div>

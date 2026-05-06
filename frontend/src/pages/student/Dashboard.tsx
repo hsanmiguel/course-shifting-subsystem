@@ -17,6 +17,7 @@ import { ApplicationCard } from '@/components/molecules/ApplicationCard';
 import { ShiftingApplication, CourseEquivalency } from '@/types';
 import { useApplications } from '@/hooks';
 import { apiClient } from '@/services/api-client';
+import { formatProgramName } from '@/constants/programs';
 
 export default function StudentDashboard() {
   const [selectedApp, setSelectedApp] = useState<ShiftingApplication | null>(null);
@@ -228,11 +229,15 @@ export default function StudentDashboard() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current Course</p>
-                      <p className="mt-2 font-semibold text-slate-950">{selectedApp.current_program}</p>
+                      <p className="mt-2 font-semibold leading-6 text-slate-950">
+                        {formatProgramName(selectedApp.current_program)}
+                      </p>
                     </div>
                     <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Desired Course</p>
-                      <p className="mt-2 font-semibold text-slate-950">{selectedApp.target_program}</p>
+                      <p className="mt-2 font-semibold leading-6 text-slate-950">
+                        {formatProgramName(selectedApp.target_program)}
+                      </p>
                     </div>
                   </div>
                   <div className="rounded-md border border-slate-200 p-4">

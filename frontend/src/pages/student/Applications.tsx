@@ -5,6 +5,7 @@ import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { useApplications } from '@/hooks';
 import { authService } from '@/services/auth';
+import { formatProgramName } from '@/constants/programs';
 
 function formatDate(date?: string | null) {
   if (!date) return 'Not available';
@@ -82,14 +83,18 @@ export default function Applications() {
               <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
                 <div className="rounded-md border border-slate-200 bg-slate-50 p-5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current Course</p>
-                  <p className="mt-2 font-semibold text-slate-950">{activeRequest.current_program}</p>
+                  <p className="mt-2 font-semibold leading-6 text-slate-950">
+                    {formatProgramName(activeRequest.current_program)}
+                  </p>
                 </div>
                 <div className="hidden text-slate-400 md:block">
                   <ArrowRight className="h-5 w-5" />
                 </div>
                 <div className="rounded-md border border-slate-200 bg-slate-50 p-5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Desired Course</p>
-                  <p className="mt-2 font-semibold text-slate-950">{activeRequest.target_program}</p>
+                  <p className="mt-2 font-semibold leading-6 text-slate-950">
+                    {formatProgramName(activeRequest.target_program)}
+                  </p>
                 </div>
               </div>
 

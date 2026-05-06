@@ -7,6 +7,7 @@ import { ShiftingApplication } from '@/types';
 import { authService } from '@/services/auth';
 import { getAdminApplications } from './api';
 import { apiClient } from '@/services/api-client';
+import { formatProgramName } from '@/constants/programs';
 
 function formatDateTime(date?: string | null) {
   if (!date) return 'Not available';
@@ -137,7 +138,7 @@ export default function AllApplications() {
                     <StatusBadge status={application.status} />
                   </div>
                   <p className="mt-2 text-sm text-slate-600">
-                    {application.current_program} to {application.target_program}
+                    {formatProgramName(application.current_program)} to {formatProgramName(application.target_program)}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">{formatDateTime(application.submitted_at)}</p>
                 </button>
@@ -191,12 +192,16 @@ export default function AllApplications() {
                   <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
                     <div>
                       <p className="text-xs text-slate-500">Current</p>
-                      <p className="font-semibold text-slate-950">{selectedApplication.current_program}</p>
+                      <p className="font-semibold leading-6 text-slate-950">
+                        {formatProgramName(selectedApplication.current_program)}
+                      </p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-slate-400" />
                     <div>
                       <p className="text-xs text-slate-500">Target</p>
-                      <p className="font-semibold text-slate-950">{selectedApplication.target_program}</p>
+                      <p className="font-semibold leading-6 text-slate-950">
+                        {formatProgramName(selectedApplication.target_program)}
+                      </p>
                     </div>
                   </div>
                 </Card.Content>

@@ -2,6 +2,7 @@ import { Card, Button } from '@heroui/react';
 import { CalendarDays, Eye, FileText } from 'lucide-react';
 import { ShiftingApplication } from '@/types';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { formatProgramName } from '@/constants/programs';
 
 interface ApplicationCardProps {
   application: ShiftingApplication;
@@ -40,11 +41,11 @@ export const ApplicationCard = ({
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current Program</p>
-            <p className="mt-2 font-medium text-slate-950">{application.current_program}</p>
+            <p className="mt-2 font-medium leading-6 text-slate-950">{formatProgramName(application.current_program)}</p>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Target Program</p>
-            <p className="mt-2 font-medium text-slate-950">{application.target_program}</p>
+            <p className="mt-2 font-medium leading-6 text-slate-950">{formatProgramName(application.target_program)}</p>
           </div>
         </div>
 

@@ -1,4 +1,6 @@
-import { Card, Button, TextField, Input, TextArea, Checkbox, Label, FieldError } from '@heroui/react';
+import type { Key } from '@heroui/react';
+
+import { Card, Button, TextField, Input, TextArea, Checkbox, Label, FieldError, ListBox, Select } from '@heroui/react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { useState } from 'react';
 import { apiClient } from '@/services/api-client';
@@ -7,6 +9,7 @@ import { SubmissionSuccess } from '@/components/atoms/SubmissionSuccess';
 import { SubmissionError } from '@/components/atoms/SubmissionError';
 import { SubmissionPending } from '@/components/atoms/SubmissionPending';
 import { SubmissionConfirmationDialog } from '@/components/molecules/SubmissionConfirmationDialog';
+import { programOptions } from '@/constants/programs';
 import type { ShiftingApplication } from '@/types';
 
 function getStudentIdFromToken() {
@@ -34,6 +37,17 @@ const checkboxIndicatorClass =
 const checkboxLabelClass = 'font-medium text-slate-800';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const yearLevelOptions = [
+  '1st Year',
+  '2nd Year',
+  '3rd Year',
+  '4th Year',
+  '5th Year',
+];
+
+const selectPopoverClass = 'z-50 !max-h-72 w-[min(var(--trigger-width),calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain';
+const programOptionClass = 'grid grid-cols-[minmax(4.5rem,7.5rem)_1fr] items-start gap-3 whitespace-normal pr-8';
 
 const fieldOrder = [
   'fullName',
@@ -139,6 +153,16 @@ export default function ApplicationForm() {
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     clearFieldError(field);
+  };
+
+  const handleProgramChange = (field: 'currentDept' | 'desiredDept', value: Key | Key[] | null) => {
+    if (Array.isArray(value)) return;
+    handleChange(field, value?.toString() ?? '');
+  };
+
+  const handleYearChange = (value: Key | Key[] | null) => {
+    if (Array.isArray(value)) return;
+    handleChange('currentYear', value?.toString() ?? '');
   };
 
   const scrollToFirstError = (errors: Record<string, string>) => {
@@ -313,26 +337,64 @@ export default function ApplicationForm() {
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Current Program</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField isRequired isInvalid={!!fieldErrors.currentDept} className="w-full" name="currentDept">
+                <Select
+                  isRequired
+                  isInvalid={!!fieldErrors.currentDept}
+                  className="w-full"
+                  name="currentDept"
+                  placeholder="Select your current program"
+                  value={formData.currentDept || null}
+                  onChange={(value) => handleProgramChange('currentDept', value)}
+                >
                   <Label>Current Program</Label>
-                  <Input 
-                    id="current-program"
-                    placeholder="Enter your current program"
-                    value={formData.currentDept}
-                    onChange={(e) => handleChange('currentDept', e.target.value)}
-                  />
+                  <Select.Trigger id="current-program">
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover className={selectPopoverClass} placement="bottom start">
+                    <ListBox>
+                      {programOptions.map((program) => (
+                        <ListBox.Item
+                          key={program.id}
+                          id={program.id}
+                          textValue={`${program.id} ${program.name}`}
+                          className={programOptionClass}
+                        >
+                          <span className="font-semibold text-slate-950">{program.id}</span>
+                          <span className="min-w-0 text-slate-600">{program.name}</span>
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                   {fieldErrors.currentDept && <FieldError>{fieldErrors.currentDept}</FieldError>}
-                </TextField>
-                <TextField isRequired isInvalid={!!fieldErrors.currentYear} className="w-full" name="currentYear">
+                </Select>
+                <Select
+                  isRequired
+                  isInvalid={!!fieldErrors.currentYear}
+                  className="w-full"
+                  name="currentYear"
+                  placeholder="Select year level"
+                  value={formData.currentYear || null}
+                  onChange={handleYearChange}
+                >
                   <Label>Current Year</Label>
-                  <Input 
-                    id="current-year"
-                    placeholder="e.g., 1st year, 2nd year"
-                    value={formData.currentYear}
-                    onChange={(e) => handleChange('currentYear', e.target.value)}
-                  />
+                  <Select.Trigger id="current-year">
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover className={selectPopoverClass} placement="bottom start">
+                    <ListBox>
+                      {yearLevelOptions.map((yearLevel) => (
+                        <ListBox.Item key={yearLevel} id={yearLevel} textValue={yearLevel}>
+                          {yearLevel}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                   {fieldErrors.currentYear && <FieldError>{fieldErrors.currentYear}</FieldError>}
-                </TextField>
+                </Select>
                 <TextField isRequired isInvalid={!!fieldErrors.gpa} className="w-full" name="gpa" type="number">
                   <Label>Current GPA</Label>
                   <Input 
@@ -363,16 +425,38 @@ export default function ApplicationForm() {
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Transfer Program Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField isRequired isInvalid={!!fieldErrors.desiredDept} className="w-full" name="desiredDept">
+                <Select
+                  isRequired
+                  isInvalid={!!fieldErrors.desiredDept}
+                  className="w-full"
+                  name="desiredDept"
+                  placeholder="Select desired program"
+                  value={formData.desiredDept || null}
+                  onChange={(value) => handleProgramChange('desiredDept', value)}
+                >
                   <Label>Desired Program</Label>
-                  <Input 
-                    id="desired-program"
-                    placeholder="Enter desired program"
-                    value={formData.desiredDept}
-                    onChange={(e) => handleChange('desiredDept', e.target.value)}
-                  />
+                  <Select.Trigger id="desired-program">
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover className={selectPopoverClass} placement="bottom start">
+                    <ListBox>
+                      {programOptions.map((program) => (
+                        <ListBox.Item
+                          key={program.id}
+                          id={program.id}
+                          textValue={`${program.id} ${program.name}`}
+                          className={programOptionClass}
+                        >
+                          <span className="font-semibold text-slate-950">{program.id}</span>
+                          <span className="min-w-0 text-slate-600">{program.name}</span>
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                   {fieldErrors.desiredDept && <FieldError>{fieldErrors.desiredDept}</FieldError>}
-                </TextField>
+                </Select>
                 <TextField isRequired isInvalid={!!fieldErrors.targetSemester} className="w-full" name="targetSemester">
                   <Label>Target Start Semester</Label>
                   <Input 
