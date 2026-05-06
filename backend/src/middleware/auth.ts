@@ -1,9 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
-import { firebaseAuth } from "../config/firebase.js";
+import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import type { UserRole } from "../domain/models.js";
 import { AppError } from "../errors/app-error.js";
-import { verifyGoogleCredential } from "../services/google-auth-service.js";
 
 const roleAlias = new Set<UserRole>([
   "student",
@@ -27,6 +26,15 @@ function parseDevToken(token: string) {
   };
 }
 
+interface JWTPayload {
+  userId: string;
+  student_id?: string;
+  role?: string;
+  email?: string;
+  iat?: number;
+  exp?: number;
+}
+
 export async function authenticate(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -36,22 +44,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   const token = authHeader.slice("Bearer ".length).trim();
 
   try {
-    if (env.authMode === "dev") {
-      const devUser = parseDevToken(token);
-      if (devUser) {
-        req.user = devUser;
-        return next();
-      }
-
-      if (env.googleClientId) {
-        const googleUser = await verifyGoogleCredential(token);
-        req.user = { id: googleUser.id, role: "student", token };
-        return next();
-      }
-
-      throw new AppError(401, "UNAUTHORIZED", "Invalid development token format.");
-    }
-
+    // Allow dev token fallback
     if (env.allowDevTokenFallback) {
       const devUser = parseDevToken(token);
       if (devUser) {
@@ -60,36 +53,24 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       }
     }
 
+    // Verify JWT issued by backend
     try {
-      const decoded = await firebaseAuth().verifyIdToken(token);
+      const decoded = jwt.verify(token, env.jwtSecret) as JWTPayload;
       const role = String(decoded.role ?? "student") as UserRole;
-      const userId = typeof decoded.student_id === "string" && decoded.student_id ? decoded.student_id : decoded.uid;
+      const userId = String(decoded.userId ?? decoded.student_id ?? "");
+      if (!userId) {
+        return next(new AppError(401, "UNAUTHORIZED", "Invalid token: missing user id."));
+      }
       req.user = { id: userId, role, token };
       return next();
-    } catch (firebaseError) {
-      if (env.googleClientId) {
-        const googleUser = await verifyGoogleCredential(token);
-        req.user = { id: googleUser.id, role: "student", token };
-        return next();
+    } catch (jwtErr) {
+      // If token is expired or invalid, respond with 401
+      if (jwtErr && (jwtErr as Error).name === "TokenExpiredError") {
+        return next(new AppError(401, "TOKEN_EXPIRED", "Your session has expired. Please log in again."));
       }
-
-      throw firebaseError;
+      return next(new AppError(401, "INVALID_TOKEN", "Invalid or malformed token."));
     }
   } catch (error) {
-    if (error instanceof Error && token.split(".").length !== 3) {
-      return next(
-        new AppError(
-          401,
-          "UNAUTHORIZED",
-          "Expected a Firebase JWT. The frontend is still sending a development token.",
-          {
-            auth_mode: env.authMode,
-            allow_dev_token_fallback: env.allowDevTokenFallback
-          }
-        )
-      );
-    }
-
     return next(error);
   }
 }
