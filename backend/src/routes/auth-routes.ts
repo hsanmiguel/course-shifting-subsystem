@@ -26,11 +26,23 @@ export function createAuthRouter(db?: Firestore) {
       const user = await verifyGoogleCredential(credential);
       const loggedInAt = nowIso();
 
+      let userRole: string = "student";
+
       if (db) {
+        // First check if user exists and has a role
+        const existingUserDoc = await db.collection("css_users").doc(user.id).get();
+        if (existingUserDoc.exists) {
+          const existingRole = existingUserDoc.data()?.role;
+          if (existingRole) {
+            userRole = existingRole;
+          }
+        }
+
+        // Update user doc (preserve existing role if present)
         await db.collection("css_users").doc(user.id).set(
           {
             user_id: user.id,
-            role: "student",
+            role: userRole,
             email: user.email,
             name: user.name,
             picture: user.picture,
@@ -45,7 +57,7 @@ export function createAuthRouter(db?: Firestore) {
       return res.json({
         token: credential,
         userId: user.id,
-        userRole: "student",
+        userRole: userRole,
         userEmail: user.email,
         userName: user.name,
         picture: user.picture
