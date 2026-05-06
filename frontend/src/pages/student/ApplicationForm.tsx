@@ -2,12 +2,7 @@ import type { Key } from '@heroui/react';
 
 import { Card, Button, TextField, Input, TextArea, Checkbox, Label, FieldError, ListBox, Select } from '@heroui/react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
-<<<<<<< HEAD
-import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
-=======
 import { useRef, useState } from 'react';
->>>>>>> 05ac58be024e77b6346838e746b301b9f6493815
 import { apiClient } from '@/services/api-client';
 import { authService } from '@/services/auth';
 import { SubmissionSuccess } from '@/components/atoms/SubmissionSuccess';
@@ -105,15 +100,8 @@ const fieldFocusIds: Record<string, string> = {
 };
 
 export default function ApplicationForm() {
-  const location = useLocation();
   const initialProfile = getStudentProfileFromAuth();
-<<<<<<< HEAD
-  const routeState = location.state as { targetProgram?: string } | null;
-  const targetProgramFromChecker =
-    routeState?.targetProgram || new URLSearchParams(location.search).get('targetProgram') || '';
-=======
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
->>>>>>> 05ac58be024e77b6346838e746b301b9f6493815
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,7 +130,7 @@ export default function ApplicationForm() {
     currentYear: '',
     gpa: '',
     credits: '',
-    desiredDept: targetProgramFromChecker,
+    desiredDept: '',
     targetSemester: '',
     motivation: '',
   });
