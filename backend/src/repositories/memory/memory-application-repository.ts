@@ -24,7 +24,8 @@ export class MemoryApplicationRepository implements ApplicationRepository {
   }
 
   async list(filters?: { studentId?: string; status?: string; targetProgram?: string }): Promise<ShiftApplication[]> {
-    return [...this.applications.values()].filter((application) => {
+    return [...this.applications.values()]
+      .filter((application) => {
       if (filters?.studentId && application.student_id !== filters.studentId) {
         return false;
       }
@@ -35,11 +36,14 @@ export class MemoryApplicationRepository implements ApplicationRepository {
         return false;
       }
       return true;
-    });
+      })
+      .sort((left, right) => new Date(right.submitted_at).getTime() - new Date(left.submitted_at).getTime());
   }
 
   async countSubmittedThisSemester(studentId: string): Promise<number> {
-    return [...this.applications.values()].filter((application) => application.student_id === studentId).length;
+    return [...this.applications.values()].filter((application) =>
+      application.student_id === studentId && application.status !== 'rejected' && application.status !== 'cancelled'
+    ).length;
   }
 
   async getNextWaitlisted(targetProgram: string): Promise<ShiftApplication | null> {
