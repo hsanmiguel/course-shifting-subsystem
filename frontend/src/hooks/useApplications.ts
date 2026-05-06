@@ -2,6 +2,31 @@ import { useEffect, useState } from 'react';
 import { ShiftingApplication, DashboardStats } from '@/types';
 import { apiClient } from '@/services/api-client';
 
+function getApplicationTimestamp(application: ShiftingApplication) {
+  const submittedAt = new Date(application.submitted_at).getTime();
+  if (Number.isFinite(submittedAt)) {
+    return submittedAt;
+  }
+
+  const decisionAt = application.decision_at ? new Date(application.decision_at).getTime() : Number.NaN;
+  if (Number.isFinite(decisionAt)) {
+    return decisionAt;
+  }
+
+  return 0;
+}
+
+function sortApplicationsNewestFirst(applications: ShiftingApplication[]) {
+  return [...applications].sort((left, right) => {
+    const timeDelta = getApplicationTimestamp(right) - getApplicationTimestamp(left);
+    if (timeDelta !== 0) {
+      return timeDelta;
+    }
+
+    return right.application_id.localeCompare(left.application_id);
+  });
+}
+
 interface UseApplicationsResult {
   applications: ShiftingApplication[];
   stats: DashboardStats;
@@ -26,7 +51,7 @@ export function useApplications(studentId?: string): UseApplicationsResult {
       setLoading(true);
       setError(null);
       const response = await apiClient.listApplications({ studentId });
-      const apps = response.data || [];
+      const apps = sortApplicationsNewestFirst(response.data || []);
       setApplications(apps);
 
       // Calculate stats

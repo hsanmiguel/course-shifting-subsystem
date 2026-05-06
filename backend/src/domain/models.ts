@@ -28,6 +28,7 @@ export interface ShiftApplicationInput {
   reason_for_shifting: string;
   self_reported_gpa?: number | null;
   self_reported_credits?: number | null;
+  supporting_attachments?: SupportingAttachment[];
   supporting_documents?: {
     official_transcripts: boolean;
     recommendation_letter: boolean;
@@ -68,6 +69,7 @@ export interface ShiftApplication {
   reason_for_shifting: string;
   self_reported_gpa: number | null;
   self_reported_credits: number | null;
+  supporting_attachments?: SupportingAttachment[];
   supporting_documents: {
     official_transcripts: boolean;
     recommendation_letter: boolean;
@@ -137,6 +139,13 @@ export interface FinancialHoldPayload {
   has_financial_hold: boolean;
   hold_type?: string;
   finance_wallet_url?: string;
+}
+
+export interface SupportingAttachment {
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  data_url: string;
 }
 
 export interface SlotPayload {
