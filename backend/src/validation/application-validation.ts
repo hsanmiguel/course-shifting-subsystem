@@ -50,6 +50,76 @@ function optionalBoolean(body: Record<string, unknown>, field: string, fallback 
   return typeof body[field] === "boolean" ? body[field] : fallback;
 }
 
+function validateSupportingAttachments(body: Record<string, unknown>, field: string, schemaErrors: Array<Record<string, unknown>>) {
+  const value = body[field];
+
+  if (value === undefined || value === null || value === "") {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    schemaErrors.push({
+      field,
+      expected_type: "array",
+      received_type: typeof value,
+      received_value: value
+    });
+    return [];
+  }
+
+  const attachments: NonNullable<ShiftApplicationInput["supporting_attachments"]> = [];
+
+  value.forEach((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      schemaErrors.push({
+        field: `${field}[${index}]`,
+        expected_type: "object",
+        received_type: typeof item,
+        received_value: item
+      });
+      return;
+    }
+
+    const record = item as Record<string, unknown>;
+    const fileName = record.file_name;
+    const mimeType = record.mime_type;
+    const sizeBytes = record.size_bytes;
+    const dataUrl = record.data_url;
+
+    if (typeof fileName !== "string" || fileName.trim().length === 0) {
+      schemaErrors.push({ field: `${field}[${index}].file_name`, expected_type: "string", received_type: typeof fileName, received_value: fileName });
+    }
+    if (typeof mimeType !== "string" || mimeType.trim().length === 0) {
+      schemaErrors.push({ field: `${field}[${index}].mime_type`, expected_type: "string", received_type: typeof mimeType, received_value: mimeType });
+    }
+    if (typeof sizeBytes !== "number" || !Number.isFinite(sizeBytes) || sizeBytes < 0) {
+      schemaErrors.push({ field: `${field}[${index}].size_bytes`, expected_type: "non-negative number", received_type: typeof sizeBytes, received_value: sizeBytes });
+    }
+    if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:")) {
+      schemaErrors.push({ field: `${field}[${index}].data_url`, expected_type: "data url string", received_type: typeof dataUrl, received_value: dataUrl });
+    }
+
+    if (
+      typeof fileName === "string" &&
+      typeof mimeType === "string" &&
+      typeof sizeBytes === "number" &&
+      Number.isFinite(sizeBytes) &&
+      sizeBytes >= 0 &&
+      typeof dataUrl === "string" &&
+      dataUrl.startsWith("data:")
+    ) {
+      attachments.push({
+        file_name: fileName.trim(),
+        mime_type: mimeType.trim(),
+        size_bytes: sizeBytes,
+        data_url: dataUrl
+      });
+    }
+  });
+
+  return attachments;
+}
+
 export function validateApplicationPayload(payload: unknown): ShiftApplicationInput {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new AppError(422, "SCHEMA_VALIDATION_FAILED", "Payload rejected: body must be a JSON object.", {
@@ -110,6 +180,7 @@ export function validateApplicationPayload(payload: unknown): ShiftApplicationIn
   const selfReportedGpa = optionalNumber(body, "self_reported_gpa", schemaErrors) ?? optionalNumber(body, "gpa", schemaErrors);
   const selfReportedCredits =
     optionalNumber(body, "self_reported_credits", schemaErrors) ?? optionalNumber(body, "credits", schemaErrors);
+  const supportingAttachments = validateSupportingAttachments(body, "supporting_attachments", schemaErrors);
 
   if (studentEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(studentEmail)) {
     fieldErrors.push({ field: "student_email", issue: "Invalid email address." });
@@ -147,6 +218,7 @@ export function validateApplicationPayload(payload: unknown): ShiftApplicationIn
     reason_for_shifting: String(body.reason_for_shifting).trim(),
     self_reported_gpa: selfReportedGpa,
     self_reported_credits: selfReportedCredits,
+    supporting_attachments: supportingAttachments,
     supporting_documents: {
       official_transcripts: optionalBoolean(body, "official_transcripts", true),
       recommendation_letter: optionalBoolean(body, "recommendation_letter", true),

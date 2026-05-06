@@ -33,6 +33,12 @@ export interface ShiftingApplication {
     recommendation_letter: boolean;
     additional_essays: boolean;
   };
+  supporting_attachments?: {
+    file_name: string;
+    mime_type: string;
+    size_bytes: number;
+    data_url: string;
+  }[];
   acknowledgements: {
     information_is_accurate: boolean;
     understands_transfer_policies: boolean;
