@@ -148,7 +148,8 @@ export default function EligibilityChecker() {
       subtitle="Check your readiness before starting a course shifting request"
       userRole="student"
     >
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="flex flex-col min-h-screen">
+        <div className="mx-auto max-w-5xl space-y-6 flex-1">
         <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
           <Card.Content className="gap-6 p-8">
             <div>
@@ -163,24 +164,37 @@ export default function EligibilityChecker() {
                 Select Target Program <span className="text-red-600">*</span>
               </label>
               <div className="rounded-md border border-slate-300 bg-white shadow-sm transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
-                <button
-                  aria-expanded={isProgramListOpen}
-                  aria-haspopup="listbox"
-                  aria-labelledby="target-program-label target-program-button"
-                  className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm outline-none"
-                  id="target-program-button"
-                  type="button"
-                  onClick={() => setIsProgramListOpen((isOpen) => !isOpen)}
-                >
-                  <span className={targetProgram ? 'text-slate-950' : 'text-slate-500'}>
-                    {targetProgram ? selectedProgramLabel : 'Choose a program to check eligibility'}
-                  </span>
-                  <ChevronDown
-                    className={`h-4 w-4 flex-shrink-0 text-slate-500 transition-transform ${
-                      isProgramListOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
+                {isProgramListOpen ? (
+                  <button
+                    aria-expanded="true"
+                    aria-haspopup="listbox"
+                    aria-labelledby="target-program-label target-program-button"
+                    className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm outline-none"
+                    id="target-program-button"
+                    type="button"
+                    onClick={() => setIsProgramListOpen((isOpen) => !isOpen)}
+                  >
+                    <span className={targetProgram ? 'text-slate-950' : 'text-slate-500'}>
+                      {targetProgram ? selectedProgramLabel : 'Choose a program to check eligibility'}
+                    </span>
+                    <ChevronDown className="h-4 w-4 flex-shrink-0 rotate-180 text-slate-500 transition-transform" />
+                  </button>
+                ) : (
+                  <button
+                    aria-expanded="false"
+                    aria-haspopup="listbox"
+                    aria-labelledby="target-program-label target-program-button"
+                    className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm outline-none"
+                    id="target-program-button"
+                    type="button"
+                    onClick={() => setIsProgramListOpen((isOpen) => !isOpen)}
+                  >
+                    <span className={targetProgram ? 'text-slate-950' : 'text-slate-500'}>
+                      {targetProgram ? selectedProgramLabel : 'Choose a program to check eligibility'}
+                    </span>
+                    <ChevronDown className="h-4 w-4 flex-shrink-0 text-slate-500 transition-transform" />
+                  </button>
+                )}
 
                 {isProgramListOpen && (
                   <div
@@ -191,14 +205,31 @@ export default function EligibilityChecker() {
                     {programOptions.map((program) => {
                       const isSelected = program.value === targetProgram;
 
+                      if (isSelected) {
+                        return (
+                          <button
+                            aria-selected="true"
+                            className="flex w-full items-start justify-between gap-3 bg-blue-50 px-3 py-2 text-left text-sm font-semibold text-blue-700 transition"
+                            key={program.value}
+                            role="option"
+                            type="button"
+                            onClick={() => {
+                              setTargetProgram(program.value);
+                              setResult(null);
+                              setError(null);
+                              setIsProgramListOpen(false);
+                            }}
+                          >
+                            <span>{program.label}</span>
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                          </button>
+                        );
+                      }
+
                       return (
                         <button
-                          aria-selected={isSelected}
-                          className={`flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition ${
-                            isSelected
-                              ? 'bg-blue-50 font-semibold text-blue-700'
-                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                          }`}
+                          aria-selected="false"
+                          className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
                           key={program.value}
                           role="option"
                           type="button"
@@ -210,7 +241,6 @@ export default function EligibilityChecker() {
                           }}
                         >
                           <span>{program.label}</span>
-                          {isSelected && <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />}
                         </button>
                       );
                     })}
@@ -361,6 +391,7 @@ export default function EligibilityChecker() {
             </div>
           </>
         )}
+        </div>
       </div>
     </SidebarLayout>
   );

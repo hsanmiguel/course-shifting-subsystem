@@ -109,35 +109,29 @@ export const Navbar = () => {
             <GithubIcon className="text-muted" />
           </Link>
           <ThemeSwitch />
-          <button
-            aria-expanded={isMenuOpen}
-            aria-label="Toggle menu"
-            className="p-2"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              {isMenuOpen ? (
+          {isMenuOpen ? (
+            <button aria-expanded="true" aria-label="Toggle menu" className="p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   d="M6 18L18 6M6 6l12 12"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
                 />
-              ) : (
+              </svg>
+            </button>
+          ) : (
+            <button aria-expanded="false" aria-label="Toggle menu" className="p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   d="M4 6h16M4 12h16M4 18h16"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
                 />
-              )}
-            </svg>
-          </button>
+              </svg>
+            </button>
+          )}
         </div>
       </header>
 

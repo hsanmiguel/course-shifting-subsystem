@@ -622,6 +622,7 @@ export default function ApplicationForm() {
                 <input
                   ref={attachmentInputRef}
                   className="hidden"
+                  aria-label="Upload supporting documents"
                   type="file"
                   multiple
                   accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
