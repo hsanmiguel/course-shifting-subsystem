@@ -1,6 +1,7 @@
 import type { Firestore } from "firebase-admin/firestore";
 import { Router } from "express";
 import { env } from "../config/env.js";
+import { firebaseAuth } from "../config/firebase.js";
 import { AppError } from "../errors/app-error.js";
 import { verifyGoogleCredential } from "../services/google-auth-service.js";
 import { nowIso } from "../utils/time.js";
@@ -54,8 +55,14 @@ export function createAuthRouter(db?: Firestore) {
         );
       }
 
+      // Create a custom Firebase token that includes the user role
+      const customToken = await firebaseAuth().createCustomToken(user.id, {
+        student_id: user.id,
+        role: userRole
+      });
+
       return res.json({
-        token: credential,
+        token: customToken,
         userId: user.id,
         userRole: userRole,
         userEmail: user.email,
