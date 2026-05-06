@@ -41,6 +41,7 @@ export const env = {
     process.env.WEB_CLIENT_ID ??
     process.env.VITE_GOOGLE_CLIENT_ID ??
     "",
+  jwtSecret: process.env.JWT_SECRET ?? "your-secret-key-change-in-production",
   subsystemBaseUrls: {
     srm: process.env.SRM_BASE_URL ?? "",
     cms: process.env.CMS_BASE_URL ?? "",
