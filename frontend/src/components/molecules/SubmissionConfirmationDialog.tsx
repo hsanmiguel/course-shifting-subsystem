@@ -1,6 +1,7 @@
 import { Card } from '@heroui/react';
 import { CheckCircle2, X } from 'lucide-react';
 import { ShiftingApplication } from '@/types';
+import { formatProgramName } from '@/constants/programs';
 
 interface SubmissionConfirmationDialogProps {
   isOpen: boolean;
@@ -22,8 +23,8 @@ export const SubmissionConfirmationDialog = ({
 
   const refId = applicationId || application?.application_id || 'CSR-XXXX-XXXX';
   const studentName = application?.student_name || 'N/A';
-  const currentProgram = application?.current_program || 'N/A';
-  const targetProgram = application?.target_program || 'N/A';
+  const currentProgram = application?.current_program ? formatProgramName(application.current_program) : 'N/A';
+  const targetProgram = application?.target_program ? formatProgramName(application.target_program) : 'N/A';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">

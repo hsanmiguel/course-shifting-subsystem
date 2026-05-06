@@ -397,6 +397,7 @@ export class ShiftingService {
       reason_for_shifting: input.reason_for_shifting,
       self_reported_gpa: input.self_reported_gpa ?? null,
       self_reported_credits: input.self_reported_credits ?? null,
+      supporting_attachments: input.supporting_attachments ?? [],
       supporting_documents: input.supporting_documents ?? {
         official_transcripts: false,
         recommendation_letter: false,

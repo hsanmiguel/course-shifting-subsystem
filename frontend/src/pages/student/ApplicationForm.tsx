@@ -1,13 +1,20 @@
-import { Card, Button, TextField, Input, TextArea, Checkbox, Label, FieldError } from '@heroui/react';
+import type { Key } from '@heroui/react';
+
+import { Card, Button, TextField, Input, TextArea, Checkbox, Label, FieldError, ListBox, Select } from '@heroui/react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
+<<<<<<< HEAD
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+=======
+import { useRef, useState } from 'react';
+>>>>>>> 05ac58be024e77b6346838e746b301b9f6493815
 import { apiClient } from '@/services/api-client';
 import { authService } from '@/services/auth';
 import { SubmissionSuccess } from '@/components/atoms/SubmissionSuccess';
 import { SubmissionError } from '@/components/atoms/SubmissionError';
 import { SubmissionPending } from '@/components/atoms/SubmissionPending';
 import { SubmissionConfirmationDialog } from '@/components/molecules/SubmissionConfirmationDialog';
+import { programOptions } from '@/constants/programs';
 import type { ShiftingApplication } from '@/types';
 
 function getStudentIdFromToken() {
@@ -35,6 +42,37 @@ const checkboxIndicatorClass =
 const checkboxLabelClass = 'font-medium text-slate-800';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const yearLevelOptions = [
+  '1st Year',
+  '2nd Year',
+  '3rd Year',
+  '4th Year',
+  '5th Year',
+];
+
+const selectPopoverClass = 'z-50 !max-h-72 w-[min(var(--trigger-width),calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain';
+const programOptionClass = 'grid grid-cols-[minmax(4.5rem,7.5rem)_1fr] items-start gap-3 whitespace-normal pr-8';
+const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_ATTACHMENT_COUNT = 5;
+const ALLOWED_ATTACHMENT_EXTENSIONS = ['.pdf', '.doc', '.docx', '.png', '.jpg', '.jpeg', '.webp', '.gif'];
+const ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+]);
+
+type SupportingAttachmentState = {
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  dataUrl: string;
+  isImage: boolean;
+};
 
 const fieldOrder = [
   'fullName',
@@ -69,15 +107,22 @@ const fieldFocusIds: Record<string, string> = {
 export default function ApplicationForm() {
   const location = useLocation();
   const initialProfile = getStudentProfileFromAuth();
+<<<<<<< HEAD
   const routeState = location.state as { targetProgram?: string } | null;
   const targetProgramFromChecker =
     routeState?.targetProgram || new URLSearchParams(location.search).get('targetProgram') || '';
+=======
+  const attachmentInputRef = useRef<HTMLInputElement | null>(null);
+>>>>>>> 05ac58be024e77b6346838e746b301b9f6493815
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [isAttachmentDropActive, setIsAttachmentDropActive] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [submittedApplication, setSubmittedApplication] = useState<ShiftingApplication | null>(null);
+  const [attachments, setAttachments] = useState<SupportingAttachmentState[]>([]);
   const [documents, setDocuments] = useState({
     officialTranscripts: true,
     recommendationLetter: true,
@@ -146,6 +191,113 @@ export default function ApplicationForm() {
     clearFieldError(field);
   };
 
+  const handleProgramChange = (field: 'currentDept' | 'desiredDept', value: Key | Key[] | null) => {
+    if (Array.isArray(value)) return;
+    handleChange(field, value?.toString() ?? '');
+  };
+
+  const readFileAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(new Error(`Unable to read ${file.name}.`));
+      reader.readAsDataURL(file);
+    });
+
+  const isAllowedAttachment = (file: File) => {
+    if (ALLOWED_ATTACHMENT_MIME_TYPES.has(file.type)) {
+      return true;
+    }
+
+    const lowerName = file.name.toLowerCase();
+    return ALLOWED_ATTACHMENT_EXTENSIONS.some((extension) => lowerName.endsWith(extension));
+  };
+
+  const addAttachments = async (files: File[]) => {
+    const incomingFiles = files.filter((file) => file.size > 0);
+
+    if (incomingFiles.length === 0) {
+      return;
+    }
+
+    const invalidFiles = incomingFiles.filter((file) => !isAllowedAttachment(file));
+    if (invalidFiles.length > 0) {
+      setAttachmentError('Only PDF, DOC, DOCX, PNG, JPG, JPEG, WEBP, and GIF files are supported.');
+      return;
+    }
+
+    const oversizedFiles = incomingFiles.filter((file) => file.size > MAX_ATTACHMENT_SIZE_BYTES);
+    if (oversizedFiles.length > 0) {
+      setAttachmentError('Each supporting file must be 5MB or smaller.');
+      return;
+    }
+
+    const allowedSlots = Math.max(0, MAX_ATTACHMENT_COUNT - attachments.length);
+    if (allowedSlots === 0) {
+      setAttachmentError(`You can attach up to ${MAX_ATTACHMENT_COUNT} files.`);
+      return;
+    }
+
+    const filesToAdd = incomingFiles.slice(0, allowedSlots);
+    if (filesToAdd.length < incomingFiles.length) {
+      setAttachmentError(`Only ${MAX_ATTACHMENT_COUNT} files can be attached at once.`);
+    } else {
+      setAttachmentError(null);
+    }
+
+    const nextAttachments = await Promise.all(
+      filesToAdd.map(async (file) => ({
+        fileName: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        sizeBytes: file.size,
+        dataUrl: await readFileAsDataUrl(file),
+        isImage: file.type.startsWith('image/'),
+      })),
+    );
+
+    setAttachments((current) => {
+      const merged = [...current];
+
+      for (const attachment of nextAttachments) {
+        if (
+          merged.some(
+            (existing) =>
+              existing.fileName === attachment.fileName &&
+              existing.sizeBytes === attachment.sizeBytes &&
+              existing.mimeType === attachment.mimeType,
+          )
+        ) {
+          continue;
+        }
+
+        merged.push(attachment);
+      }
+
+      return merged.slice(0, MAX_ATTACHMENT_COUNT);
+    });
+  };
+
+  const handleAttachmentInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    await addAttachments(files);
+  };
+
+  const handleAttachmentDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsAttachmentDropActive(false);
+    await addAttachments(Array.from(event.dataTransfer.files ?? []));
+  };
+
+  const removeAttachment = (fileName: string, sizeBytes: number) => {
+    setAttachments((current) => current.filter((attachment) => !(attachment.fileName === fileName && attachment.sizeBytes === sizeBytes)));
+  };
+
+  const handleYearChange = (value: Key | Key[] | null) => {
+    if (Array.isArray(value)) return;
+    handleChange('currentYear', value?.toString() ?? '');
+  };
+
   const scrollToFirstError = (errors: Record<string, string>) => {
     const firstField = fieldOrder.find(field => errors[field]);
     if (!firstField) return;
@@ -192,6 +344,12 @@ export default function ApplicationForm() {
         official_transcripts: documents.officialTranscripts,
         recommendation_letter: documents.recommendationLetter,
         additional_essays: documents.additionalEssays,
+        supporting_attachments: attachments.map((attachment) => ({
+          file_name: attachment.fileName,
+          mime_type: attachment.mimeType,
+          size_bytes: attachment.sizeBytes,
+          data_url: attachment.dataUrl,
+        })),
         information_is_accurate: acknowledgements.informationIsAccurate,
         understands_transfer_policies: acknowledgements.understandsTransferPolicies,
         agrees_to_terms: acknowledgements.agreesToTerms,
@@ -223,6 +381,8 @@ export default function ApplicationForm() {
           recommendationLetter: true,
           additionalEssays: false,
         });
+        setAttachments([]);
+        setAttachmentError(null);
         setAcknowledgements({
           informationIsAccurate: false,
           understandsTransferPolicies: false,
@@ -318,26 +478,64 @@ export default function ApplicationForm() {
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Current Program</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField isRequired isInvalid={!!fieldErrors.currentDept} className="w-full" name="currentDept">
+                <Select
+                  isRequired
+                  isInvalid={!!fieldErrors.currentDept}
+                  className="w-full"
+                  name="currentDept"
+                  placeholder="Select your current program"
+                  value={formData.currentDept || null}
+                  onChange={(value) => handleProgramChange('currentDept', value)}
+                >
                   <Label>Current Program</Label>
-                  <Input 
-                    id="current-program"
-                    placeholder="Enter your current program"
-                    value={formData.currentDept}
-                    onChange={(e) => handleChange('currentDept', e.target.value)}
-                  />
+                  <Select.Trigger id="current-program">
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover className={selectPopoverClass} placement="bottom start">
+                    <ListBox>
+                      {programOptions.map((program) => (
+                        <ListBox.Item
+                          key={program.id}
+                          id={program.id}
+                          textValue={`${program.id} ${program.name}`}
+                          className={programOptionClass}
+                        >
+                          <span className="font-semibold text-slate-950">{program.id}</span>
+                          <span className="min-w-0 text-slate-600">{program.name}</span>
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                   {fieldErrors.currentDept && <FieldError>{fieldErrors.currentDept}</FieldError>}
-                </TextField>
-                <TextField isRequired isInvalid={!!fieldErrors.currentYear} className="w-full" name="currentYear">
+                </Select>
+                <Select
+                  isRequired
+                  isInvalid={!!fieldErrors.currentYear}
+                  className="w-full"
+                  name="currentYear"
+                  placeholder="Select year level"
+                  value={formData.currentYear || null}
+                  onChange={handleYearChange}
+                >
                   <Label>Current Year</Label>
-                  <Input 
-                    id="current-year"
-                    placeholder="e.g., 1st year, 2nd year"
-                    value={formData.currentYear}
-                    onChange={(e) => handleChange('currentYear', e.target.value)}
-                  />
+                  <Select.Trigger id="current-year">
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover className={selectPopoverClass} placement="bottom start">
+                    <ListBox>
+                      {yearLevelOptions.map((yearLevel) => (
+                        <ListBox.Item key={yearLevel} id={yearLevel} textValue={yearLevel}>
+                          {yearLevel}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                   {fieldErrors.currentYear && <FieldError>{fieldErrors.currentYear}</FieldError>}
-                </TextField>
+                </Select>
                 <TextField isRequired isInvalid={!!fieldErrors.gpa} className="w-full" name="gpa" type="number">
                   <Label>Current GPA</Label>
                   <Input 
@@ -368,16 +566,38 @@ export default function ApplicationForm() {
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Transfer Program Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField isRequired isInvalid={!!fieldErrors.desiredDept} className="w-full" name="desiredDept">
+                <Select
+                  isRequired
+                  isInvalid={!!fieldErrors.desiredDept}
+                  className="w-full"
+                  name="desiredDept"
+                  placeholder="Select desired program"
+                  value={formData.desiredDept || null}
+                  onChange={(value) => handleProgramChange('desiredDept', value)}
+                >
                   <Label>Desired Program</Label>
-                  <Input 
-                    id="desired-program"
-                    placeholder="Enter desired program"
-                    value={formData.desiredDept}
-                    onChange={(e) => handleChange('desiredDept', e.target.value)}
-                  />
+                  <Select.Trigger id="desired-program">
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover className={selectPopoverClass} placement="bottom start">
+                    <ListBox>
+                      {programOptions.map((program) => (
+                        <ListBox.Item
+                          key={program.id}
+                          id={program.id}
+                          textValue={`${program.id} ${program.name}`}
+                          className={programOptionClass}
+                        >
+                          <span className="font-semibold text-slate-950">{program.id}</span>
+                          <span className="min-w-0 text-slate-600">{program.name}</span>
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                   {fieldErrors.desiredDept && <FieldError>{fieldErrors.desiredDept}</FieldError>}
-                </TextField>
+                </Select>
                 <TextField isRequired isInvalid={!!fieldErrors.targetSemester} className="w-full" name="targetSemester">
                   <Label>Target Start Semester</Label>
                   <Input 
@@ -411,14 +631,82 @@ export default function ApplicationForm() {
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Supporting Documents</h3>
               <div className="space-y-4">
-                <div className="cursor-pointer rounded-md border-2 border-dashed border-gray-300 p-6 text-center transition hover:border-blue-400">
+                <input
+                  ref={attachmentInputRef}
+                  className="hidden"
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={handleAttachmentInputChange}
+                />
+                <div
+                  className={`cursor-pointer rounded-md border-2 border-dashed p-6 text-center transition ${
+                    isAttachmentDropActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400'
+                  }`}
+                  onClick={() => attachmentInputRef.current?.click()}
+                  onDragEnter={(event) => {
+                    event.preventDefault();
+                    setIsAttachmentDropActive(true);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsAttachmentDropActive(true);
+                  }}
+                  onDragLeave={() => setIsAttachmentDropActive(false)}
+                  onDrop={handleAttachmentDrop}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      attachmentInputRef.current?.click();
+                    }
+                  }}
+                >
                   <p className="text-sm text-gray-600">
-                    📎 Drag and drop your documents here or click to browse
+                    📎 Drag and drop files here or click to browse
                   </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Accepted formats: PDF, DOC, DOCX (Max 5MB each)
+                  <p className="mt-2 text-xs text-gray-400">
+                    Accepted formats: PNG, JPG, JPEG, WEBP, GIF, PDF, DOC, DOCX. Max 5MB each, up to 5 files.
                   </p>
                 </div>
+                {attachmentError && <p className="text-sm text-red-600">{attachmentError}</p>}
+                {attachments.length > 0 && (
+                  <div className="space-y-3 rounded-md border border-gray-200 bg-slate-50 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-900">Selected attachments</p>
+                      <p className="text-xs text-slate-500">{attachments.length} of {MAX_ATTACHMENT_COUNT} attached</p>
+                    </div>
+                    <div className="space-y-2">
+                      {attachments.map((attachment) => (
+                        <div key={`${attachment.fileName}-${attachment.sizeBytes}`} className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-3 py-2">
+                          <div className="min-w-0 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-md bg-slate-100 text-xs font-semibold text-slate-600">
+                              {attachment.isImage ? (
+                                <img src={attachment.dataUrl} alt={attachment.fileName} className="h-full w-full object-cover" />
+                              ) : (
+                                <span>FILE</span>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-slate-900">{attachment.fileName}</p>
+                              <p className="text-xs text-slate-500">
+                                {Math.max(1, Math.round(attachment.sizeBytes / 1024))} KB
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="text-sm font-medium text-blue-600 transition hover:text-blue-700"
+                            onClick={() => removeAttachment(attachment.fileName, attachment.sizeBytes)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Checkbox
                     id="official-transcripts"

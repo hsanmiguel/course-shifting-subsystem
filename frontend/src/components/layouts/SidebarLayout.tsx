@@ -41,7 +41,7 @@ export const SidebarLayout = ({
       {/* Main Content - Offset for fixed sidebar */}
       <div className="flex-1 flex flex-col ml-64">
         {/* Top Navigation Bar */}
-        <div className="bg-white border-b border-slate-200 sticky top-0 z-20">
+        <div className="bg-white border-b border-slate-200 sticky top-0 z-50">
           <div className="px-8 py-4">
             <div>
               <h1 className="text-xl font-semibold text-slate-950">{title}</h1>

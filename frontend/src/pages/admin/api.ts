@@ -1,6 +1,19 @@
-import { AdminAnalytics, AdminApplication, AuditLogEntry } from '@/types';
+import { AdminAnalytics, AuditLogEntry, ShiftingApplication } from '@/types';
+import { formatProgramName } from '@/constants/programs';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+
+interface BackendAuditLog {
+  id: string;
+  application_id: string;
+  actor_id: string;
+  actor_role: string;
+  action: string;
+  details?: Record<string, unknown> | string | null;
+  timestamp: string;
+  from_status?: string | null;
+  to_status?: string | null;
+}
 
 async function getJson<T>(path: string, fallback: T): Promise<T> {
   try {
@@ -18,56 +31,78 @@ async function getJson<T>(path: string, fallback: T): Promise<T> {
   }
 }
 
-export const mockAdminApplications: AdminApplication[] = [
+export const mockAdminApplications: ShiftingApplication[] = [
   {
-    id: 'CSS-2024-00142',
-    studentId: 'STU-2021-08831',
-    studentName: 'Juan Dela Cruz',
-    currentProgram: 'BSIT',
-    targetProgram: 'BSCS',
-    gwa: 1.75,
-    units: 72,
-    reason:
+    application_id: 'CSS-2024-00142',
+    student_id: 'STU-2021-08831',
+    student_name: 'Juan Dela Cruz',
+    student_email: 'juan.delacruz@example.edu',
+    phone_number: null,
+    current_program: 'BSIT',
+    current_year: '3rd Year',
+    target_program: 'BSCS',
+    target_semester: '2024-2025 First Semester',
+    reason_for_shifting:
       'I have developed a stronger interest in computer science theory and algorithms through my programming courses.',
-    status: 'under_review',
-    submittedAt: '2024-07-10',
-    assignedTo: 'dept_head_01',
-    eligibilityChecks: [
-      { label: 'Minimum GWA (2.5 required)', passed: true },
-      { label: 'No failing grades in major subjects', passed: true },
-      { label: 'No financial holds', passed: true },
-      { label: 'No academic alerts', passed: true },
-      { label: 'Available slots in target program', passed: true },
-    ],
-    slaWarning: {
-      title: 'SLA Breach Warning - Application CSS-2024-00142',
-      hoursPending: 48,
-      assignedTo: 'dept_head_01',
-      message: 'Reminder notification sent to assigned reviewer via U-ANAS.',
-      escalatedTo: 'registrar_admin',
-      timestamp: '7/12/2024, 4:30:00 PM',
+    self_reported_gpa: 1.75,
+    self_reported_credits: 72,
+    supporting_documents: {
+      official_transcripts: true,
+      recommendation_letter: true,
+      additional_essays: false,
     },
+    acknowledgements: {
+      information_is_accurate: true,
+      understands_transfer_policies: true,
+      agrees_to_terms: true,
+    },
+    gwa: 1.75,
+    units_completed: 72,
+    has_failing_major: false,
+    has_financial_hold: false,
+    has_academic_alert: false,
+    slot_available: true,
+    status: 'under_review',
+    submitted_at: '2024-07-10',
+    reviewed_by: 'dept_head_01',
+    decision_at: null,
+    remarks: null,
   },
   {
-    id: 'CSS-2024-00156',
-    studentId: 'STU-2021-09045',
-    studentName: 'Maria Santos',
-    currentProgram: 'BSCS',
-    targetProgram: 'BSIT',
-    gwa: 1.42,
-    units: 84,
-    reason:
+    application_id: 'CSS-2024-00156',
+    student_id: 'STU-2021-09045',
+    student_name: 'Maria Santos',
+    student_email: 'maria.santos@example.edu',
+    phone_number: null,
+    current_program: 'BSCS',
+    current_year: '3rd Year',
+    target_program: 'BSIT',
+    target_semester: '2024-2025 First Semester',
+    reason_for_shifting:
       'I want to move toward applied software implementation and systems administration work.',
+    self_reported_gpa: 1.42,
+    self_reported_credits: 84,
+    supporting_documents: {
+      official_transcripts: true,
+      recommendation_letter: true,
+      additional_essays: false,
+    },
+    acknowledgements: {
+      information_is_accurate: true,
+      understands_transfer_policies: true,
+      agrees_to_terms: true,
+    },
+    gwa: 1.42,
+    units_completed: 84,
+    has_failing_major: false,
+    has_financial_hold: false,
+    has_academic_alert: false,
+    slot_available: true,
     status: 'pending',
-    submittedAt: '2024-07-11',
-    assignedTo: 'dept_head_02',
-    eligibilityChecks: [
-      { label: 'Minimum GWA (2.5 required)', passed: true },
-      { label: 'No failing grades in major subjects', passed: true },
-      { label: 'No financial holds', passed: true },
-      { label: 'No academic alerts', passed: true },
-      { label: 'Available slots in target program', passed: true },
-    ],
+    submitted_at: '2024-07-11',
+    reviewed_by: 'dept_head_02',
+    decision_at: null,
+    remarks: null,
   },
 ];
 
@@ -140,44 +175,52 @@ export const mockAuditLogs: AuditLogEntry[] = [
 ];
 
 export function getAdminApplications() {
-  return getJson<AdminApplication[]>('/admin/applications', mockAdminApplications);
+  return getJson<{ data?: ShiftingApplication[] } | ShiftingApplication[]>(
+    '/api/css/applications',
+    { data: mockAdminApplications },
+  ).then((payload) => (Array.isArray(payload) ? payload : payload.data ?? mockAdminApplications));
 }
 
 export function getAuditLogs() {
-  return getJson<AuditLogEntry[]>('/admin/audit-logs', mockAuditLogs);
+  return getJson<{ data?: BackendAuditLog[] } | BackendAuditLog[] | AuditLogEntry[]>(
+    '/api/css/audit-logs',
+    mockAuditLogs,
+  ).then((payload) => {
+    const logs = Array.isArray(payload) ? payload : payload.data ?? [];
+
+    if (!logs.length) return mockAuditLogs;
+
+    return logs.map((log) => ('application_id' in log ? normalizeAuditLog(log) : log));
+  });
 }
 
 export function buildAdminAnalytics(
-  applications: AdminApplication[],
+  applications: ShiftingApplication[],
   auditLogs: AuditLogEntry[],
 ): AdminAnalytics {
   const statusCounts = applications.reduce<Record<string, number>>((counts, application) => {
     counts[application.status] = (counts[application.status] ?? 0) + 1;
-
     return counts;
   }, {});
 
   const targetProgramCounts = applications.reduce<Record<string, number>>((counts, application) => {
-    counts[application.targetProgram] = (counts[application.targetProgram] ?? 0) + 1;
+    const programName = formatProgramName(application.target_program);
 
+    counts[programName] = (counts[programName] ?? 0) + 1;
     return counts;
   }, {});
 
-  const averageGwa = applications.length
-    ? applications.reduce((sum, application) => sum + application.gwa, 0) / applications.length
-    : 0;
-  const averageUnits = applications.length
-    ? applications.reduce((sum, application) => sum + application.units, 0) / applications.length
-    : 0;
+  const averageGwa = average(applications.map((application) => application.gwa ?? application.self_reported_gpa));
+  const averageUnits = average(applications.map((application) => application.units_completed ?? application.self_reported_credits));
 
   return {
     totalApplications: applications.length,
     pendingReview: applications.filter((application) =>
-      ['pending', 'under_review', 'escalated'].includes(application.status),
+      ['pending', 'under_review', 'waitlisted', 'awaiting_data', 'pending_cms_update'].includes(application.status),
     ).length,
     approvedApplications: statusCounts.approved ?? 0,
     rejectedApplications: statusCounts.rejected ?? 0,
-    slaBreaches: applications.filter((application) => application.slaWarning).length,
+    slaBreaches: applications.filter((application) => application.status === 'under_review' && hoursSince(application.submitted_at) >= 48).length,
     averageGwa: Number(averageGwa.toFixed(2)),
     averageUnits: Number(averageUnits.toFixed(0)),
     targetProgramDemand: Object.entries(targetProgramCounts).map(([program, count]) => ({ program, count })),
@@ -189,10 +232,71 @@ export function buildAdminAnalytics(
 export async function getAdminAnalytics() {
   const [applications, auditLogs] = await Promise.all([
     getAdminApplications(),
-    getAuditLogs(),
+    getAuditLogs().catch(() => []),
   ]);
 
-  const fallback = buildAdminAnalytics(applications, auditLogs);
+  return buildAdminAnalytics(applications, auditLogs);
+}
 
-  return getJson<AdminAnalytics>('/admin/analytics', fallback);
+function average(values: Array<number | string | null | undefined>) {
+  const numbers = values
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+
+  if (!numbers.length) return 0;
+
+  return numbers.reduce((sum, value) => sum + value, 0) / numbers.length;
+}
+
+function hoursSince(date: string) {
+  const submitted = new Date(date).getTime();
+
+  if (!Number.isFinite(submitted)) return 0;
+
+  return Math.max(0, (Date.now() - submitted) / (1000 * 60 * 60));
+}
+
+function formatDateTime(date: string) {
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) return date;
+
+  return parsed.toLocaleString();
+}
+
+function formatAuditDetails(log: BackendAuditLog) {
+  if (typeof log.details === 'string') return log.details;
+
+  const detailText = Object.entries(log.details || {})
+    .map(([key, value]) => `${key}: ${String(value)}`)
+    .join(', ');
+
+  return detailText || log.action.replace(/_/g, ' ').toLowerCase();
+}
+
+function normalizeAuditAction(action: string): AuditLogEntry['action'] {
+  const normalized = action.toLowerCase();
+
+  if (normalized.includes('approved')) return 'approved';
+  if (normalized.includes('rejected')) return 'rejected';
+  if (normalized.includes('escalated')) return 'escalated';
+  if (normalized.includes('waitlist')) return 'waitlisted';
+
+  return 'status_change';
+}
+
+function normalizeAuditLog(log: BackendAuditLog): AuditLogEntry {
+  return {
+    id: log.id,
+    timestamp: formatDateTime(log.timestamp),
+    applicationId: log.application_id,
+    studentName: '',
+    studentId: '',
+    action: normalizeAuditAction(log.action),
+    actor: log.actor_id,
+    actorRole: log.actor_role,
+    details: formatAuditDetails(log),
+    fromStatus: log.from_status ?? '',
+    toStatus: log.to_status ?? '',
+  };
 }
