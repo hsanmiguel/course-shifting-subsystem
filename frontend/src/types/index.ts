@@ -78,6 +78,33 @@ export interface SubjectEquivalencyRecord {
   generated_at: string;
 }
 
+export interface EligibilityCheckResult {
+  student_id: string;
+  current_program: string;
+  target_program: string;
+  checks: {
+    minimum_gwa_required: number;
+    student_gwa: number;
+    gwa_eligible: boolean;
+    no_failing_major: boolean;
+    no_financial_hold: boolean;
+    no_academic_alert: boolean;
+    slot_available: boolean;
+    available_slots: number;
+    curriculum_found: boolean;
+  };
+  failing_subjects: Array<{
+    subject_code: string;
+    subject_name: string;
+    units: number;
+    grade: number | 'INC';
+    category: 'major' | 'minor' | 'general';
+  }>;
+  alerts: string[];
+  hold_type: string | null;
+  overall_eligible: boolean;
+}
+
 export interface Notification {
   id: string;
   type: 'success' | 'info' | 'warning' | 'error';

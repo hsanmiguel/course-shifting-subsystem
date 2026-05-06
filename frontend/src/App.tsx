@@ -7,6 +7,7 @@ import StudentDashboard from "@/pages/student/Dashboard";
 import Applications from "@/pages/student/Applications";
 import CourseEquivalencies from "@/pages/student/CourseEquivalencies";
 import ApplicationForm from "@/pages/student/ApplicationForm";
+import EligibilityChecker from "@/pages/student/EligibilityChecker";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AllApplications from "@/pages/admin/AllApplications";
 import AuditLogs from "@/pages/admin/AuditLogs";
@@ -63,6 +64,7 @@ function App() {
       <Route element={<ProtectedRoute element={<StudentDashboard />} />} path="/student/dashboard" />
       <Route element={<ProtectedRoute element={<StudentDashboard />} />} path="/student" />
       <Route element={<ProtectedRoute element={<Applications />} />} path="/student/applications" />
+      <Route element={<ProtectedRoute element={<EligibilityChecker />} />} path="/student/eligibility-checker" />
       <Route element={<ProtectedRoute element={<CourseEquivalencies />} />} path="/student/course-equivalencies" />
       <Route element={<ProtectedRoute element={<ApplicationForm />} />} path="/student/application-form" />
       <Route element={<ProtectedRoute element={<AdminDashboard />} />} path="/admin/dashboard" />

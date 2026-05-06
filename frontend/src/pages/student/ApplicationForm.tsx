@@ -1,6 +1,7 @@
 import { Card, Button, TextField, Input, TextArea, Checkbox, Label, FieldError } from '@heroui/react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { apiClient } from '@/services/api-client';
 import { authService } from '@/services/auth';
 import { SubmissionSuccess } from '@/components/atoms/SubmissionSuccess';
@@ -66,7 +67,11 @@ const fieldFocusIds: Record<string, string> = {
 };
 
 export default function ApplicationForm() {
+  const location = useLocation();
   const initialProfile = getStudentProfileFromAuth();
+  const routeState = location.state as { targetProgram?: string } | null;
+  const targetProgramFromChecker =
+    routeState?.targetProgram || new URLSearchParams(location.search).get('targetProgram') || '';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +97,7 @@ export default function ApplicationForm() {
     currentYear: '',
     gpa: '',
     credits: '',
-    desiredDept: '',
+    desiredDept: targetProgramFromChecker,
     targetSemester: '',
     motivation: '',
   });

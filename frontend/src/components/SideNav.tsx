@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   ScrollText,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface SideNavProps {
@@ -35,6 +36,11 @@ export const SideNav = ({
       label: 'My Request',
       href: '/student/applications',
       icon: <ClipboardList className="h-5 w-5" />,
+    },
+    {
+      label: 'Eligibility Checker',
+      href: '/student/eligibility-checker',
+      icon: <ShieldCheck className="h-5 w-5" />,
     },
     {
       label: 'Application Form',

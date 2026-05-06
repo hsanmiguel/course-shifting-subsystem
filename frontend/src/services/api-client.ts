@@ -1,4 +1,4 @@
-import { ShiftingApplication, SubjectEquivalencyRecord } from '@/types';
+import { EligibilityCheckResult, ShiftingApplication, SubjectEquivalencyRecord } from '@/types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 const API_PATH = '/api/css';
@@ -103,7 +103,7 @@ export const apiClient = {
     current_program: string;
     target_program: string;
   }) {
-    return fetchApi<any>('/eligibility-check', {
+    return fetchApi<EligibilityCheckResult>('/eligibility-check', {
       method: 'POST',
       body: JSON.stringify(data),
     });
