@@ -1,14 +1,68 @@
+import type { DateValue, Key } from '@heroui/react';
+
 import { useEffect, useMemo, useState } from 'react';
-import { Card, Input, Label, Spinner } from '@heroui/react';
+import {
+  Button,
+  Card,
+  DateField,
+  DateRangePicker,
+  Input,
+  Label,
+  ListBox,
+  RangeCalendar,
+  Select,
+  Spinner,
+} from '@heroui/react';
+import { Activity, CalendarDays, Filter, Search, X } from 'lucide-react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { AuditLogEntry } from '@/types';
 import { authService } from '@/services/auth';
 import { getAuditLogs } from './api';
 
+type AuditDateRange = {
+  start: DateValue;
+  end: DateValue;
+};
+
+const actionOptions = [
+  { id: 'all', label: 'All actions' },
+  { id: 'approved', label: 'Approved' },
+  { id: 'rejected', label: 'Rejected' },
+  { id: 'escalated', label: 'Escalated' },
+  { id: 'status_change', label: 'Status change' },
+  { id: 'waitlisted', label: 'Waitlisted' },
+];
+
+const selectPopoverClass = 'z-50 max-h-72 overflow-y-auto';
+
+function getSelectValue(value: Key | Key[] | null) {
+  if (Array.isArray(value)) return 'all';
+  return value?.toString() ?? 'all';
+}
+
+function parseLogDate(timestamp: string) {
+  const parsed = new Date(timestamp);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getRangeBoundary(value: DateValue, boundary: 'start' | 'end') {
+  const date = new Date(value.toString());
+
+  if (boundary === 'start') {
+    date.setHours(0, 0, 0, 0);
+  } else {
+    date.setHours(23, 59, 59, 999);
+  }
+
+  return date.getTime();
+}
+
 export default function AuditLogs() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [search, setSearch] = useState('');
+  const [actionFilter, setActionFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<AuditDateRange | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const currentUser = authService.getCurrentUser();
@@ -34,14 +88,33 @@ export default function AuditLogs() {
 
   const filteredLogs = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
+    const rangeStart = dateRange ? getRangeBoundary(dateRange.start, 'start') : null;
+    const rangeEnd = dateRange ? getRangeBoundary(dateRange.end, 'end') : null;
 
-    if (!normalizedSearch) return logs;
+    return logs.filter((log) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        [log.applicationId, log.studentName, log.studentId, log.actor, log.actorRole, log.details]
+          .some((value) => value.toLowerCase().includes(normalizedSearch));
 
-    return logs.filter((log) =>
-      [log.applicationId, log.studentName, log.studentId, log.actor, log.details]
-        .some((value) => value.toLowerCase().includes(normalizedSearch)),
-    );
-  }, [logs, search]);
+      const matchesAction = actionFilter === 'all' || log.action === actionFilter;
+      const logDate = parseLogDate(log.timestamp);
+      const matchesDate =
+        !rangeStart ||
+        !rangeEnd ||
+        (logDate && logDate.getTime() >= rangeStart && logDate.getTime() <= rangeEnd);
+
+      return matchesSearch && matchesAction && matchesDate;
+    });
+  }, [logs, search, actionFilter, dateRange]);
+
+  const hasActiveFilters = !!search.trim() || actionFilter !== 'all' || !!dateRange;
+
+  function clearFilters() {
+    setSearch('');
+    setActionFilter('all');
+    setDateRange(null);
+  }
 
   return (
     <SidebarLayout
@@ -69,34 +142,162 @@ export default function AuditLogs() {
         )}
 
         <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
-          <Card.Content className="p-5">
-            <div className="grid gap-4 lg:grid-cols-[2fr_1fr_1fr]">
-              <div className="flex flex-col gap-2">
+          <Card.Content className="gap-5 p-5">
+            <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-md bg-slate-100 p-2 text-slate-600">
+                    <Filter className="h-4 w-4" />
+                  </span>
+                  <p className="font-semibold text-slate-950">Filter audit trail</p>
+                </div>
+                <p className="mt-2 text-sm text-slate-500">
+                  Showing {filteredLogs.length} of {logs.length} system events
+                </p>
+              </div>
+
+              {hasActiveFilters && (
+                <Button size="sm" variant="secondary" onPress={clearFilters}>
+                  <X className="h-4 w-4" />
+                  Clear filters
+                </Button>
+              )}
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-[1.4fr_0.8fr_1.2fr]">
+              <div className="flex flex-col gap-1">
                 <Label htmlFor="audit-search" className="text-sm font-medium text-slate-700">Search</Label>
-                <Input
-                  id="audit-search"
-                  placeholder="Search by application ID or student name..."
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="action-type" className="text-sm font-medium text-slate-700">Action Type</Label>
-                <Input id="action-type" />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label className="text-sm font-medium text-slate-700">Date Range</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input aria-label="Start date" />
-                  <Input aria-label="End date" />
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    id="audit-search"
+                    className="w-full pl-9"
+                    placeholder="Search application ID, student, actor, or details"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
                 </div>
               </div>
+
+              <Select
+                className="w-full"
+                placeholder="Select action type"
+                value={actionFilter}
+                onChange={(value) => setActionFilter(getSelectValue(value))}
+              >
+                <Label>Action Type</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover className={selectPopoverClass} placement="bottom start">
+                  <ListBox>
+                    {actionOptions.map((option) => (
+                      <ListBox.Item key={option.id} id={option.id} textValue={option.label}>
+                        {option.label}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+
+              <DateRangePicker
+                className="w-full"
+                endName="auditEndDate"
+                startName="auditStartDate"
+                value={dateRange}
+                onChange={setDateRange}
+              >
+                <Label>Date Range</Label>
+                <DateField.Group fullWidth>
+                  <DateField.Input slot="start">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateRangePicker.RangeSeparator />
+                  <DateField.Input slot="end">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateField.Suffix>
+                    <DateRangePicker.Trigger aria-label="Open audit date range calendar">
+                      <DateRangePicker.TriggerIndicator />
+                    </DateRangePicker.Trigger>
+                  </DateField.Suffix>
+                </DateField.Group>
+                <DateRangePicker.Popover className="z-50" placement="bottom end">
+                  <RangeCalendar aria-label="Audit log date range">
+                    <RangeCalendar.Header>
+                      <RangeCalendar.YearPickerTrigger>
+                        <RangeCalendar.YearPickerTriggerHeading />
+                        <RangeCalendar.YearPickerTriggerIndicator />
+                      </RangeCalendar.YearPickerTrigger>
+                      <RangeCalendar.NavButton slot="previous" />
+                      <RangeCalendar.NavButton slot="next" />
+                    </RangeCalendar.Header>
+                    <RangeCalendar.Grid>
+                      <RangeCalendar.GridHeader>
+                        {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                      </RangeCalendar.GridHeader>
+                      <RangeCalendar.GridBody>
+                        {(date) => <RangeCalendar.Cell date={date} />}
+                      </RangeCalendar.GridBody>
+                    </RangeCalendar.Grid>
+                    <RangeCalendar.YearPickerGrid>
+                      <RangeCalendar.YearPickerGridBody>
+                        {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
+                      </RangeCalendar.YearPickerGridBody>
+                    </RangeCalendar.YearPickerGrid>
+                  </RangeCalendar>
+                </DateRangePicker.Popover>
+              </DateRangePicker>
             </div>
           </Card.Content>
         </Card>
 
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
+            <Card.Content className="flex-row items-center gap-3 p-4">
+              <span className="rounded-md bg-blue-50 p-2 text-blue-700">
+                <Activity className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Visible Events</p>
+                <p className="mt-1 text-xl font-semibold text-slate-950">{filteredLogs.length}</p>
+              </div>
+            </Card.Content>
+          </Card>
+          <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
+            <Card.Content className="flex-row items-center gap-3 p-4">
+              <span className="rounded-md bg-amber-50 p-2 text-amber-700">
+                <Filter className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Action Filter</p>
+                <p className="mt-1 font-semibold capitalize text-slate-950">{actionFilter.replace(/_/g, ' ')}</p>
+              </div>
+            </Card.Content>
+          </Card>
+          <Card className="rounded-md border border-slate-200 bg-white shadow-sm">
+            <Card.Content className="flex-row items-center gap-3 p-4">
+              <span className="rounded-md bg-slate-100 p-2 text-slate-700">
+                <CalendarDays className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Date Window</p>
+                <p className="mt-1 font-semibold text-slate-950">
+                  {dateRange ? `${dateRange.start.toString()} to ${dateRange.end.toString()}` : 'All dates'}
+                </p>
+              </div>
+            </Card.Content>
+          </Card>
+        </div>
+
         <Card className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
           <Card.Content className="p-0">
+            <div className="border-b border-slate-200 px-5 py-4">
+              <p className="font-semibold text-slate-950">Audit Event History</p>
+              <p className="mt-1 text-sm text-slate-500">Chronological review actions and system updates</p>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[58rem] table-fixed text-sm">
                 <thead className="bg-slate-100 text-xs uppercase text-slate-600">

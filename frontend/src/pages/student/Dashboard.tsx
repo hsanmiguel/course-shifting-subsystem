@@ -6,8 +6,10 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardCheck,
+  GraduationCap,
   FilePenLine,
   FileText,
+  MoveRight,
   X,
 } from 'lucide-react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
@@ -214,39 +216,67 @@ export default function StudentDashboard() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-          <Card className="w-full max-w-xl overflow-hidden rounded-md border border-slate-200 shadow-2xl">
-            <div className="flex items-center justify-between bg-slate-900 px-6 py-4 text-white">
-              <h2 className="text-lg font-semibold">
-                {selectedApp ? 'Request Details' : 'New Course Shifting Request'}
-              </h2>
-              <Button size="sm" variant="tertiary" onPress={() => setShowModal(false)}>
+          <Card className="w-full max-w-2xl overflow-hidden rounded-md border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-5 border-b border-slate-200 bg-white px-6 py-5">
+              <div className="flex items-start gap-3">
+                <span className="rounded-md bg-blue-50 p-3 text-blue-700">
+                  {selectedApp ? <FileText className="h-5 w-5" /> : <FilePenLine className="h-5 w-5" />}
+                </span>
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-950">
+                    {selectedApp ? 'Request Details' : 'New Course Shifting Request'}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {selectedApp?.application_id ?? 'Complete the required details to submit a request'}
+                  </p>
+                </div>
+              </div>
+              <Button
+                aria-label="Close request details"
+                className="h-9 w-9 shrink-0 rounded-full p-0"
+                size="sm"
+                variant="secondary"
+                onPress={() => setShowModal(false)}
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <div className="max-h-[65vh] overflow-y-auto p-6">
               {selectedApp ? (
-                <div className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current Course</p>
-                      <p className="mt-2 font-semibold leading-6 text-slate-950">
+                <div className="space-y-5">
+                  <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
+                    <div className="rounded-md border border-slate-200 bg-slate-50 p-5">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <GraduationCap className="h-4 w-4" />
+                        Current Course
+                      </div>
+                      <p className="mt-3 text-base font-semibold leading-7 text-slate-950">
                         {formatProgramName(selectedApp.current_program)}
                       </p>
                     </div>
-                    <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Desired Course</p>
-                      <p className="mt-2 font-semibold leading-6 text-slate-950">
+                    <div className="hidden items-center text-slate-400 md:flex">
+                      <MoveRight className="h-5 w-5" />
+                    </div>
+                    <div className="rounded-md border border-blue-200 bg-blue-50 p-5">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                        <GraduationCap className="h-4 w-4" />
+                        Desired Course
+                      </div>
+                      <p className="mt-3 text-base font-semibold leading-7 text-slate-950">
                         {formatProgramName(selectedApp.target_program)}
                       </p>
                     </div>
                   </div>
-                  <div className="rounded-md border border-slate-200 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Reason</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-700">{selectedApp.reason_for_shifting}</p>
-                  </div>
-                  <div className="rounded-md border border-slate-200 p-4">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
-                    <StatusBadge status={selectedApp.status} />
+
+                  <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+                    <div className="rounded-md border border-slate-200 p-5">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Reason</p>
+                      <p className="mt-3 text-sm leading-6 text-slate-700">{selectedApp.reason_for_shifting}</p>
+                    </div>
+                    <div className="rounded-md border border-slate-200 p-5 md:min-w-44">
+                      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
+                      <StatusBadge status={selectedApp.status} />
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -287,7 +317,7 @@ export default function StudentDashboard() {
                 </div>
               )}
             </div>
-            <div className="flex gap-3 border-t border-slate-200 pt-6">
+            <div className="flex gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
               {!selectedApp && (
                 <Button
                   variant="primary"
@@ -303,7 +333,7 @@ export default function StudentDashboard() {
                 onPress={() => setShowModal(false)}
                 className="flex-1"
               >
-                Close
+                {selectedApp ? 'Done' : 'Close'}
               </Button>
             </div>
           </Card>
