@@ -118,7 +118,11 @@ export default function Login() {
       setIsGoogleLoading(true);
       setError(null);
       await loginWithGoogleCredential(response.credential);
-      navigate('/student/dashboard');
+      // Redirect based on role returned by authService
+      const currentUser = (await import('@/services/auth')).authService.getCurrentUser();
+      const role = currentUser?.role ?? 'student';
+      const redirectUrl = role === 'student' ? '/student/dashboard' : '/admin/dashboard';
+      navigate(redirectUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google login failed');
     } finally {
