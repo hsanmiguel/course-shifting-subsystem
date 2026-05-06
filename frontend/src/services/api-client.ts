@@ -1,8 +1,6 @@
 import { EligibilityCheckResult, ShiftingApplication, SubjectEquivalencyRecord } from '@/types';
 
-// Default to the deployed backend on Render so the hosted frontend works
-// even if build-time env vars aren't set in Firebase Hosting.
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://course-shifting-subsystem.onrender.com';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 const API_PATH = '/api/css';
 
 export { BASE_URL };
