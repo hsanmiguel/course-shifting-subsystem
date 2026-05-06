@@ -5,6 +5,8 @@ dotenv.config();
 type AuthMode = "dev" | "firebase";
 type StorageProvider = "memory" | "firestore";
 
+const authMode = (process.env.AUTH_MODE ?? "dev") as AuthMode;
+
 function readBoolean(name: string, fallback: boolean): boolean {
   const raw = process.env[name];
   if (!raw) {
@@ -27,8 +29,8 @@ function readNumber(name: string, fallback: number): number {
 export const env = {
   port: readNumber("PORT", 4000),
   nodeEnv: process.env.NODE_ENV ?? "development",
-  authMode: (process.env.AUTH_MODE ?? "dev") as AuthMode,
-  allowDevTokenFallback: readBoolean("ALLOW_DEV_TOKEN_FALLBACK", process.env.NODE_ENV !== "production"),
+  authMode,
+  allowDevTokenFallback: readBoolean("ALLOW_DEV_TOKEN_FALLBACK", authMode === "dev"),
   storageProvider: (process.env.STORAGE_PROVIDER ?? "memory") as StorageProvider,
   minimumGwa: readNumber("MINIMUM_GWA", 2.5),
   maxApplicationsPerSemester: readNumber("MAX_APPLICATIONS_PER_SEMESTER", 5),

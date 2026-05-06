@@ -51,6 +51,15 @@ export function createApp() {
     });
   });
 
+  // Debug endpoint: echo received Authorization header and current user (if any)
+  // Useful to verify whether the frontend is sending the token.
+  app.get("/api/debug/headers", (req, res) => {
+    return res.json({
+      authorization: req.headers.authorization ?? null,
+      user: (req as any).user ?? null
+    });
+  });
+
   app.use("/api/auth", createAuthRouter(db));
   app.use("/api/css", createCssRouter(shiftingService));
   app.use(createAdminRouter(shiftingService));

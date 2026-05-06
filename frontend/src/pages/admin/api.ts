@@ -2,6 +2,7 @@ import { AdminAnalytics, AuditLogEntry, ShiftingApplication } from '@/types';
 import { formatProgramName } from '@/constants/programs';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true' || !API_BASE_URL;
 
 interface BackendAuditLog {
   id: string;
@@ -16,6 +17,8 @@ interface BackendAuditLog {
 }
 
 async function getJson<T>(path: string, fallback: T): Promise<T> {
+  if (USE_MOCK_DATA) return fallback;
+
   try {
     const headers: Record<string, string> = { Accept: 'application/json' };
     const token = localStorage.getItem('authToken') || import.meta.env.VITE_AUTH_TOKEN;
@@ -23,11 +26,14 @@ async function getJson<T>(path: string, fallback: T): Promise<T> {
 
     const response = await fetch(`${API_BASE_URL}${path}`, { headers });
 
-    if (!response.ok) return fallback;
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `API error: ${response.status}`);
+    }
 
     return await response.json();
-  } catch {
-    return fallback;
+  } catch (error) {
+    throw error instanceof Error ? error : new Error('Failed to fetch admin data.');
   }
 }
 
@@ -188,7 +194,7 @@ export function getAuditLogs() {
   ).then((payload) => {
     const logs = Array.isArray(payload) ? payload : payload.data ?? [];
 
-    if (!logs.length) return mockAuditLogs;
+    if (!logs.length) return [];
 
     return logs.map((log) => ('application_id' in log ? normalizeAuditLog(log) : log));
   });

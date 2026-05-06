@@ -160,28 +160,11 @@ export default function Login() {
 
     try {
       setIsLoading(true);
-
-      // Determine role based on ID prefix
-      const role = trimmedId.startsWith('ADM-') ? 'system_admin' : 'student';
-
-      // Create dev token: dev:role:userId
-      const devToken = `dev:${role}:${trimmedId}`;
-
-      // Store in localStorage with correct keys
-      localStorage.setItem('authToken', devToken);
-      localStorage.setItem('studentId', trimmedId);
-      localStorage.setItem('userEmail', trimmedEmail);
-      localStorage.setItem('studentName', trimmedEmail.split('@')[0]);
-      localStorage.setItem('userRole', role);
-
-      // Small delay to ensure localStorage is written
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Redirect based on role
-      const redirectUrl = role === 'system_admin' ? '/admin/dashboard' : '/student/dashboard';
+      const data = await authService.loginWithUserId(trimmedId, trimmedEmail);
+      const redirectUrl = data.userRole === 'student' ? '/student/dashboard' : '/admin/dashboard';
       navigate(redirectUrl);
     } catch (err) {
-      setError('Failed to log in. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to log in. Please try again.');
     } finally {
       setIsLoading(false);
     }

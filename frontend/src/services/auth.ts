@@ -74,6 +74,16 @@ export const authService = {
     return data;
   },
 
+  async loginWithUserId(userId: string, email: string) {
+    const data = await fetchAuth<AuthResponse>('/id-login', {
+      method: 'POST',
+      body: JSON.stringify({ userId, email }),
+    });
+
+    storeAuth(data);
+    return data;
+  },
+
   logout(): void {
     apiClient.clearAuthToken();
     localStorage.removeItem(STORAGE_KEYS.USER_ID);

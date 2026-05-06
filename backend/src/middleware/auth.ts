@@ -44,8 +44,8 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   const token = authHeader.slice("Bearer ".length).trim();
 
   try {
-    // Allow dev token fallback
-    if (env.allowDevTokenFallback) {
+    // Allow raw dev tokens only when explicitly configured.
+    if (env.authMode === "dev" || env.allowDevTokenFallback) {
       const devUser = parseDevToken(token);
       if (devUser) {
         req.user = devUser;
@@ -64,17 +64,6 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       req.user = { id: userId, role, token };
       return next();
     } catch (jwtErr) {
-      // Log verification errors to help diagnose issues in production (temporary)
-      try {
-        console.error("JWT verification error:", (jwtErr as Error).name, (jwtErr as Error).message);
-        // Attempt to decode token payload without verification to inspect contents
-        const decodedUnsafe = jwt.decode(token, { complete: true });
-        console.error("JWT decode (unsafe):", decodedUnsafe);
-      } catch (logErr) {
-        console.error("Failed to log JWT details:", logErr);
-      }
-
-      // If token is expired or invalid, respond with 401
       if (jwtErr && (jwtErr as Error).name === "TokenExpiredError") {
         return next(new AppError(401, "TOKEN_EXPIRED", "Your session has expired. Please log in again."));
       }
