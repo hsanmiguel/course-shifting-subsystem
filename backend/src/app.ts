@@ -15,6 +15,7 @@ import { createAdminRouter } from "./routes/admin-routes.js";
 import { EquivalencyService } from "./services/equivalency-service.js";
 import { ShiftingService } from "./services/shifting-service.js";
 import { MockSubsystemClients } from "./integrations/mock-subsystem-clients.js";
+import { EsbSubsystemClients } from "./integrations/esb-subsystem-clients.js";
 
 const db = env.storageProvider === "firestore" ? firestoreDb() : undefined;
 
@@ -28,10 +29,16 @@ const auditRepository =
     ? new FirestoreAuditRepository(db)
     : new MemoryAuditRepository();
 
+const fallbackSubsystemClients = new MockSubsystemClients();
+const subsystemClients = new EsbSubsystemClients(fallbackSubsystemClients, {
+  srmStudentsUrl: env.esb.srmStudentsUrl,
+  sfwStudentStatusUrlTemplate: env.esb.sfwStudentStatusUrlTemplate
+});
+
 const shiftingService = new ShiftingService(
   applicationRepository,
   auditRepository,
-  new MockSubsystemClients(),
+  subsystemClients,
   new EquivalencyService()
 );
 
@@ -41,14 +48,26 @@ export function createApp() {
   app.use(cors());
   app.use(express.json({ limit: "15mb" }));
 
+  const statusPayload = {
+    service: "Course Shifting Subsystem Backend",
+    version: "1.0.0",
+    status: "running",
+    endpoints: {
+      health: "/health",
+      api: "/api/css"
+    },
+    integrations: {
+      srm_students: env.esb.srmStudentsUrl,
+      sfw_student_status: env.esb.sfwStudentStatusUrlTemplate
+    }
+  };
+
+  app.get("/", (req, res) => {
+    return res.json(statusPayload);
+  });
+
   app.get("/health", (req, res) => {
-    return res.json({
-      service: "css-backend",
-      status: "ok",
-      environment: env.nodeEnv,
-      storage_provider: env.storageProvider,
-      auth_mode: env.authMode
-    });
+    return res.json(statusPayload);
   });
 
   // Debug endpoint: echo received Authorization header and current user (if any)

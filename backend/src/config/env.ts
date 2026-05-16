@@ -6,6 +6,7 @@ type AuthMode = "dev" | "firebase";
 type StorageProvider = "memory" | "firestore";
 
 const authMode = (process.env.AUTH_MODE ?? "dev") as AuthMode;
+const esbBaseUrl = process.env.ESB_BASE_URL ?? "https://esb-cjnx.onrender.com/api/esb";
 
 function readBoolean(name: string, fallback: boolean): boolean {
   const raw = process.env[name];
@@ -44,11 +45,18 @@ export const env = {
     process.env.VITE_GOOGLE_CLIENT_ID ??
     "",
   jwtSecret: process.env.JWT_SECRET ?? "change-this-secret-in-production",
+  esb: {
+    baseUrl: esbBaseUrl,
+    srmStudentsUrl: process.env.ESB_SRM_STUDENTS_URL ?? `${esbBaseUrl}/srm/students`,
+    sfwStudentStatusUrlTemplate:
+      process.env.ESB_SFW_STUDENT_STATUS_URL_TEMPLATE ?? `${esbBaseUrl}/sfw/students/:id/status`
+  },
   subsystemBaseUrls: {
     srm: process.env.SRM_BASE_URL ?? "",
     cms: process.env.CMS_BASE_URL ?? "",
     sgvces: process.env.SGVCES_BASE_URL ?? "",
     uanas: process.env.UANAS_BASE_URL ?? "",
-    finance: process.env.FINANCE_BASE_URL ?? ""
+    finance: process.env.FINANCE_BASE_URL ?? "",
+    sfw: process.env.SFW_BASE_URL ?? ""
   }
 };

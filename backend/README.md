@@ -36,6 +36,16 @@ Example dev tokens:
 - `STORAGE_PROVIDER=memory`: stores data in process memory
 - `STORAGE_PROVIDER=firestore`: uses Firestore collections
 
+## ESB Integration
+
+The backend now reads student academic profiles from SRM and financial status from SFW through the ESB.
+
+- `ESB_BASE_URL`: defaults to `https://esb-cjnx.onrender.com/api/esb`
+- `ESB_SRM_STUDENTS_URL`: defaults to `${ESB_BASE_URL}/srm/students`
+- `ESB_SFW_STUDENT_STATUS_URL_TEMPLATE`: defaults to `${ESB_BASE_URL}/sfw/students/:id/status`
+
+CMS, SGVCES, U-ANAS, and slot/notification calls still use the local fallback client until those ESB endpoints are available.
+
 ## Main Endpoints
 
 - `POST /api/css/apply`
