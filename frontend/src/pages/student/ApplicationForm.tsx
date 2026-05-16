@@ -436,7 +436,7 @@ export default function ApplicationForm() {
                 </TextField>
                 <TextField isDisabled isInvalid={!!fieldErrors.studentId} className="w-full" name="studentId" value={formData.studentId}>
                   <Label>Student ID</Label>
-                  <Input id="student-id" placeholder="STU-YYYY-0000" />
+                  <Input id="student-id" placeholder="202300695" />
                   {fieldErrors.studentId && <FieldError>{fieldErrors.studentId}</FieldError>}
                 </TextField>
                 <TextField isRequired isInvalid={!!fieldErrors.email} className="w-full" name="email" type="email">

@@ -1,7 +1,7 @@
 import type { EligibilityCheckInput, ReviewDecisionInput, ShiftApplicationInput } from "../domain/models.js";
 import { AppError } from "../errors/app-error.js";
 
-const studentIdPattern = /^STU-\d{4}-\d{4,5}$/;
+const studentIdPattern = /^\d{9}$/;
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -158,9 +158,9 @@ export function validateApplicationPayload(payload: unknown): ShiftApplicationIn
     });
   }
 
-  if (!studentIdPattern.test(String(body.student_id))) {
+  if (!studentIdPattern.test(String(body.student_id).trim())) {
     throw new AppError(400, "VALIDATION_ERROR", "Application submission failed: missing required fields.", {
-        field_errors: [{ field: "student_id", issue: "Invalid format. Expected pattern: STU-YYYY-NNNN or STU-YYYY-NNNNN." }]
+        field_errors: [{ field: "student_id", issue: "Invalid format. Expected a 9-digit student ID, for example 202300695." }]
       });
   }
 
@@ -255,9 +255,9 @@ export function validateEligibilityPayload(payload: unknown): EligibilityCheckIn
     });
   }
 
-  if (!studentIdPattern.test(String(body.student_id))) {
+  if (!studentIdPattern.test(String(body.student_id).trim())) {
     throw new AppError(400, "VALIDATION_ERROR", "Eligibility check failed: invalid student ID format.", {
-        field_errors: [{ field: "student_id", issue: "Invalid format. Expected pattern: STU-YYYY-NNNN or STU-YYYY-NNNNN." }]
+        field_errors: [{ field: "student_id", issue: "Invalid format. Expected a 9-digit student ID, for example 202300695." }]
       });
   }
 

@@ -122,7 +122,7 @@ All endpoints return JSON. Example:
 // Single object
 {
   id: 'CSR-2024-001',
-  studentId: 'STU-2021-0001',
+  studentId: '202300695',
   status: 'under_review',
   ...
 }

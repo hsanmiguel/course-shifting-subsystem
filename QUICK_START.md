@@ -56,7 +56,7 @@ Open `http://localhost:5173` in your browser
 Add to browser console:
 ```javascript
 localStorage.setItem('authToken', 'test-token');
-localStorage.setItem('studentId', 'STU-2021-0001');
+localStorage.setItem('studentId', '202300695');
 location.reload();
 ```
 

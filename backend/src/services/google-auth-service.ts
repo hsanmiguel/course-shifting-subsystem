@@ -17,7 +17,7 @@ function createStudentIdFromGoogleSubject(subject: string) {
     hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   }
 
-  return `STU-2026-${String(hash % 10000).padStart(4, "0")}`;
+  return `2026${String(hash % 100000).padStart(5, "0")}`;
 }
 
 export async function verifyGoogleCredential(credential: string): Promise<GoogleUser> {

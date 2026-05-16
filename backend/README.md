@@ -27,7 +27,7 @@ The API starts on `http://localhost:4000` by default.
 
 Example dev tokens:
 
-- Student: `Bearer dev:student:STU-2021-08831`
+- Student: `Bearer dev:student:202300695`
 - Department head: `Bearer dev:department_head:dept_head_01`
 - Registrar: `Bearer dev:registrar:registrar_admin`
 
@@ -63,7 +63,7 @@ CMS, SGVCES, U-ANAS, and slot/notification calls still use the local fallback cl
 
 ```json
 {
-  "student_id": "STU-2021-08831",
+  "student_id": "202300695",
   "student_name": "Juan Dela Cruz",
   "current_program": "BSIT",
   "target_program": "BSCS",

@@ -260,7 +260,11 @@ function asObject(value: unknown): JsonObject | null {
 }
 
 function readStudentId(record: JsonObject): string | undefined {
-  return readString(record, ["student_id", "studentId", "student_number", "studentNumber", "student_no", "studentNo", "id"]);
+  const value = readUnknown(record, ["student_id", "studentId", "student_number", "studentNumber", "student_no", "studentNo", "id"]);
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
 function sameId(left: string | undefined, right: string): boolean {

@@ -131,7 +131,7 @@ The API is ready, but **authentication needs implementation**:
 ```javascript
 // Paste in browser console
 localStorage.setItem('authToken', 'test-token');
-localStorage.setItem('studentId', 'STU-2021-0001');
+localStorage.setItem('studentId', '202300695');
 location.reload();
 ```
 
@@ -208,7 +208,7 @@ import { apiClient } from '@/services/api-client';
 apiClient.setAuthToken('jwt-token-here');
 
 // Make API call
-const apps = await apiClient.listApplications({ studentId: 'STU-123' });
+const apps = await apiClient.listApplications({ studentId: '202300695' });
 
 // Get current token
 const token = apiClient.getAuthToken();

@@ -6,7 +6,7 @@ import { AppError } from "../errors/app-error.js";
 import { verifyGoogleCredential } from "../services/google-auth-service.js";
 import { nowIso } from "../utils/time.js";
 
-const idLoginPattern = /^(STU|ADM)-\d{4}-\d{5}$/;
+const idLoginPattern = /^(?:\d{9}|ADM-\d{4}-\d{5})$/;
 
 function signAuthToken(payload: { userId: string; role: string; email: string }) {
   return jwt.sign(
@@ -81,7 +81,7 @@ export function createAuthRouter(db?: Firestore) {
       const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
 
       if (!idLoginPattern.test(userId)) {
-        throw new AppError(400, "VALIDATION_ERROR", "Invalid ID format. Expected STU-YYYY-NNNNN or ADM-YYYY-NNNNN.", {
+        throw new AppError(400, "VALIDATION_ERROR", "Invalid ID format. Expected a 9-digit student ID or ADM-YYYY-NNNNN.", {
           field_errors: [{ field: "userId", issue: "Invalid ID format." }]
         });
       }

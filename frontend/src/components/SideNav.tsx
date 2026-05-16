@@ -21,7 +21,7 @@ interface SideNavProps {
 export const SideNav = ({
   userRole = 'student',
   userName = 'Student User',
-  studentId = 'STU-2021-0001',
+  studentId = '202300695',
   onLogout = () => console.log('Logout'),
 }: SideNavProps) => {
   const isStudent = userRole === 'student';

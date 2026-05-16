@@ -131,8 +131,9 @@ export default function Login() {
   }
 
   const validateStudentId = (id: string): boolean => {
-    // Format: STU-YYYY-NNNNN (e.g., STU-2021-00001) or ADM-YYYY-NNNNN (e.g., ADM-2021-00001)
-    const pattern = /^(STU|ADM)-\d{4}-\d{5}$/;
+    // Students use a 9-digit numeric ID, for example 202300695.
+    // Admin IDs keep the ADM-YYYY-NNNNN format.
+    const pattern = /^(?:\d{9}|ADM-\d{4}-\d{5})$/;
     return pattern.test(id.trim());
   };
 
@@ -149,7 +150,7 @@ export default function Login() {
     }
 
     if (!validateStudentId(trimmedId)) {
-      setError('Invalid ID format. Expected: STU-YYYY-NNNNN  (e.g., STU-2021-00001)');
+      setError('Invalid ID format. Expected a 9-digit student ID, for example 202300695.');
       return;
     }
 
@@ -208,13 +209,13 @@ export default function Login() {
             <div>
               <Label className="text-sm font-medium text-slate-700 block mb-1.5">User ID</Label>
               <Input
-                placeholder="STU-2021-00001"
+                placeholder="202300695"
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
                 disabled={isLoading || isGoogleLoading}
                 className="w-full"
               />
-              <p className="text-xs text-slate-500 mt-1">Format: STU-YYYY-NNNNN or ADM-YYYY-NNNNN</p>
+              <p className="text-xs text-slate-500 mt-1">Students: 9 digits. Admins: ADM-YYYY-NNNNN.</p>
             </div>
 
             {/* Email Input */}
