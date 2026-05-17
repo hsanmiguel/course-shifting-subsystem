@@ -160,7 +160,7 @@ export default function AllApplications() {
     }
   }
 
-  const canReview = selectedApplication && ['pending', 'under_review'].includes(selectedApplication.status);
+  const canReview = selectedApplication && ['pending', 'under_review', 'awaiting_data'].includes(selectedApplication.status);
   const submittedHours = hoursSince(selectedApplication?.submitted_at);
   const showSlaWarning = !!selectedApplication && selectedApplication.status === 'under_review' && submittedHours >= 48;
   const hasActiveFilters = !!searchQuery.trim() || statusFilter !== 'all' || targetProgramFilter !== 'all';

@@ -2,7 +2,7 @@ import type { Key } from '@heroui/react';
 
 import { Card, Button, TextField, Input, TextArea, Checkbox, Label, FieldError, ListBox, Select } from '@heroui/react';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiClient } from '@/services/api-client';
 import { authService } from '@/services/auth';
 import { SubmissionSuccess } from '@/components/atoms/SubmissionSuccess';
@@ -102,6 +102,7 @@ const fieldFocusIds: Record<string, string> = {
 export default function ApplicationForm() {
   const initialProfile = getStudentProfileFromAuth();
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
+  const [courseOptions, setCourseOptions] = useState(programOptions);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +135,35 @@ export default function ApplicationForm() {
     targetSemester: '',
     motivation: '',
   });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    apiClient
+      .listCatalogCourses()
+      .then(({ data }) => {
+        const optionsById = new Map<string, { id: string; name: string }>();
+
+        for (const course of data) {
+          if (!course.subject_code || !course.subject_name) continue;
+          optionsById.set(course.subject_code, {
+            id: course.subject_code,
+            name: course.subject_name,
+          });
+        }
+
+        if (isMounted && optionsById.size > 0) {
+          setCourseOptions([...optionsById.values()]);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load CMS course catalog:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const validateForm = () => {
     const nextErrors: Record<string, string> = {};
@@ -482,7 +512,7 @@ export default function ApplicationForm() {
                   </Select.Trigger>
                   <Select.Popover className={selectPopoverClass} placement="bottom start">
                     <ListBox>
-                      {programOptions.map((program) => (
+                      {courseOptions.map((program) => (
                         <ListBox.Item
                           key={program.id}
                           id={program.id}
@@ -570,7 +600,7 @@ export default function ApplicationForm() {
                   </Select.Trigger>
                   <Select.Popover className={selectPopoverClass} placement="bottom start">
                     <ListBox>
-                      {programOptions.map((program) => (
+                      {courseOptions.map((program) => (
                         <ListBox.Item
                           key={program.id}
                           id={program.id}

@@ -1,4 +1,4 @@
-import { EligibilityCheckResult, ShiftingApplication, SubjectEquivalencyRecord } from '@/types';
+import { CourseCatalogItem, EligibilityCheckResult, ShiftingApplication, SubjectEquivalencyRecord } from '@/types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 const API_PATH = '/api/css';
@@ -113,6 +113,10 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  async listCatalogCourses() {
+    return fetchApi<{ data: CourseCatalogItem[] }>('/catalog');
   },
 
   async reviewApplication(

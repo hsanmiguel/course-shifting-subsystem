@@ -276,6 +276,10 @@ export class ShiftingService {
     }
   }
 
+  async listCourseCatalog() {
+    return this.subsystems.getCurriculum("");
+  }
+
   async getAuditLogs(applicationId: string) {
     await this.getApplication(applicationId);
     return this.audits.listByApplication(applicationId);
@@ -308,7 +312,7 @@ export class ShiftingService {
   async reviewApplication(applicationId: string, review: ReviewDecisionInput, actorId: string, actorRole: UserRole) {
     const application = await this.getApplication(applicationId);
 
-    if (!["under_review", "pending"].includes(application.status)) {
+    if (!["under_review", "pending", "awaiting_data"].includes(application.status)) {
       throw new AppError(409, "INVALID_APPLICATION_STATE", "Application cannot be reviewed in its current state.", {
         current_status: application.status
       });

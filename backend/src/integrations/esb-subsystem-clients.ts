@@ -203,7 +203,7 @@ function normalizeCurriculum(courses: JsonObject[], programId: string): Curricul
   const targetProgram = programId.trim().toLowerCase();
   const programAwareCourses = courses.filter((course) => {
     const courseProgram = readString(course, ["program_id", "programId", "program", "degree_program", "degreeProgram"]);
-    return !courseProgram || courseProgram.trim().toLowerCase() === targetProgram;
+    return !targetProgram || !courseProgram || courseProgram.trim().toLowerCase() === targetProgram;
   });
 
   return programAwareCourses.flatMap((course) => {

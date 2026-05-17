@@ -50,6 +50,7 @@ SGVCES, U-ANAS, and slot/notification calls still use the local fallback client 
 ## Main Endpoints
 
 - `POST /api/css/apply`
+- `GET /api/css/catalog`
 - `POST /api/css/eligibility-check`
 - `GET /api/css/applications/:applicationId`
 - `GET /api/css/applications/:applicationId/equivalency`

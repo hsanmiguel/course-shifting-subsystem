@@ -1,6 +1,6 @@
 import { Button, Card, Spinner } from '@heroui/react';
 import { AlertCircle, ArrowRight, CheckCircle2, ChevronDown, RotateCcw, XCircle } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SidebarLayout } from '@/components/layouts/SidebarLayout';
 import { apiClient } from '@/services/api-client';
@@ -53,8 +53,8 @@ function getStudentIdFromToken() {
   return prefix === 'dev' && role === 'student' ? studentId : '';
 }
 
-function formatProgram(programCode: string) {
-  return programOptions.find((program) => program.value === programCode)?.label ?? programCode;
+function formatProgram(programCode: string, options = programOptions) {
+  return options.find((program) => program.value === programCode)?.label ?? programCode;
 }
 
 function CheckRow({
@@ -93,8 +93,38 @@ export default function EligibilityChecker() {
   const [error, setError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [isProgramListOpen, setIsProgramListOpen] = useState(false);
+  const [catalogOptions, setCatalogOptions] = useState(programOptions);
 
-  const selectedProgramLabel = useMemo(() => formatProgram(targetProgram), [targetProgram]);
+  useEffect(() => {
+    let isMounted = true;
+
+    apiClient
+      .listCatalogCourses()
+      .then(({ data }) => {
+        const optionsByValue = new Map<string, { value: string; label: string }>();
+
+        for (const course of data) {
+          if (!course.subject_code || !course.subject_name) continue;
+          optionsByValue.set(course.subject_code, {
+            value: course.subject_code,
+            label: `${course.subject_code} - ${course.subject_name}`,
+          });
+        }
+
+        if (isMounted && optionsByValue.size > 0) {
+          setCatalogOptions([...optionsByValue.values()]);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load CMS course catalog:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const selectedProgramLabel = useMemo(() => formatProgram(targetProgram, catalogOptions), [targetProgram, catalogOptions]);
 
   const handleCheckEligibility = async () => {
     if (!targetProgram) {
@@ -202,7 +232,7 @@ export default function EligibilityChecker() {
                     className="max-h-72 overflow-y-auto border-t border-slate-200"
                     role="listbox"
                   >
-                    {programOptions.map((program) => {
+                    {catalogOptions.map((program) => {
                       const isSelected = program.value === targetProgram;
 
                       if (isSelected) {
@@ -315,12 +345,12 @@ export default function EligibilityChecker() {
                     </p>
                     <p className="mt-1 text-sm">
                       {result.overall_eligible
-                        ? `You meet the requirements for ${formatProgram(result.target_program)}.`
+                        ? `You meet the requirements for ${formatProgram(result.target_program, catalogOptions)}.`
                         : `One or more requirements need attention before shifting to ${selectedProgramLabel}.`}
                     </p>
                   </div>
                 </div>
-                <p className="text-sm font-semibold">{formatProgram(result.target_program)}</p>
+                <p className="text-sm font-semibold">{formatProgram(result.target_program, catalogOptions)}</p>
               </div>
             </Card>
 

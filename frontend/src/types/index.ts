@@ -84,6 +84,13 @@ export interface SubjectEquivalencyRecord {
   generated_at: string;
 }
 
+export interface CourseCatalogItem {
+  subject_code: string;
+  subject_name: string;
+  units: number;
+  equivalents?: string[];
+}
+
 export interface EligibilityCheckResult {
   student_id: string;
   current_program: string;

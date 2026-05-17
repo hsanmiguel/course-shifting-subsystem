@@ -38,6 +38,15 @@ export function createCssRouter(service: ShiftingService) {
     }
   });
 
+  router.get("/catalog", authenticate, allowRoles("student", "adviser", "department_head", "registrar", "system_admin"), async (req, res, next) => {
+    try {
+      const catalog = await service.listCourseCatalog();
+      return res.json({ data: catalog });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   router.get("/applications", authenticate, allowRoles("student", "adviser", "department_head", "registrar", "system_admin"), async (req, res, next) => {
     try {
       const studentId = typeof req.query.studentId === "string" ? req.query.studentId : undefined;
