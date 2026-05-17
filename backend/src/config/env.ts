@@ -48,6 +48,7 @@ export const env = {
   esb: {
     baseUrl: esbBaseUrl,
     srmStudentsUrl: process.env.ESB_SRM_STUDENTS_URL ?? `${esbBaseUrl}/srm/students`,
+    cmsCatalogUrl: process.env.ESB_CMS_CATALOG_URL ?? `${esbBaseUrl}/cms/catalog`,
     sfwStudentStatusUrlTemplate:
       process.env.ESB_SFW_STUDENT_STATUS_URL_TEMPLATE ?? `${esbBaseUrl}/sfw/students/:id/status`
   },

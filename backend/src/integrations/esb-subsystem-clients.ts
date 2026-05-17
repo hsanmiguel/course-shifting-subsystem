@@ -15,6 +15,7 @@ type JsonObject = Record<string, unknown>;
 
 interface EsbSubsystemClientOptions {
   srmStudentsUrl: string;
+  cmsCatalogUrl: string;
   sfwStudentStatusUrlTemplate: string;
   timeoutMs?: number;
   retries?: number;
@@ -67,7 +68,9 @@ export class EsbSubsystemClients implements SubsystemClients {
   }
 
   async getCurriculum(programId: string): Promise<CurriculumSubject[]> {
-    return this.fallback.getCurriculum(programId);
+    const payload = await this.fetchJson(this.options.cmsCatalogUrl, "CMS");
+    const courses = extractCollection(payload, ["courses", "catalog", "curriculum", "subjects", "data", "results", "items", "records"]);
+    return normalizeCurriculum(courses, programId);
   }
 
   async getAcademicAlerts(studentId: string): Promise<AcademicAlertPayload> {
@@ -196,6 +199,38 @@ function normalizeFinancialHold(record: JsonObject, studentId: string): Financia
   };
 }
 
+function normalizeCurriculum(courses: JsonObject[], programId: string): CurriculumSubject[] {
+  const targetProgram = programId.trim().toLowerCase();
+  const programAwareCourses = courses.filter((course) => {
+    const courseProgram = readString(course, ["program_id", "programId", "program", "degree_program", "degreeProgram"]);
+    return !courseProgram || courseProgram.trim().toLowerCase() === targetProgram;
+  });
+
+  return programAwareCourses.flatMap((course) => {
+    const status = readString(course, ["status", "state"]);
+    if (status && status.trim().toLowerCase() !== "active") {
+      return [];
+    }
+
+    const subjectCode = readString(course, ["subject_code", "subjectCode", "course_code", "courseCode", "code"]);
+    const subjectName = readString(course, ["subject_name", "subjectName", "course_name", "courseName", "name", "title"]);
+    const units = readNumber(course, ["units", "credits", "credit_units", "creditUnits"]);
+
+    if (!subjectCode || !subjectName || units === undefined) {
+      return [];
+    }
+
+    return [
+      {
+        subject_code: subjectCode,
+        subject_name: subjectName,
+        units,
+        equivalents: extractEquivalentCodes(course)
+      }
+    ];
+  });
+}
+
 function normalizeSubjects(record: JsonObject): SubjectRecord[] {
   const subjects = objectCandidates(record, ["academic_profile", "academicProfile", "profile", "academics", "student"]).flatMap((candidate) =>
     extractCollection(candidate, ["subjects", "courses", "grades", "transcript", "academic_records", "academicRecords"])
@@ -220,6 +255,23 @@ function normalizeSubjects(record: JsonObject): SubjectRecord[] {
         category: normalizeCategory(readString(subject, ["category", "type", "classification"]))
       }
     ];
+  });
+}
+
+function extractEquivalentCodes(course: JsonObject): string[] {
+  const equivalents = readUnknown(course, ["equivalents", "equivalent_codes", "equivalentCodes", "prerequisites"]);
+  if (!Array.isArray(equivalents)) {
+    return [];
+  }
+
+  return equivalents.flatMap((equivalent) => {
+    if (typeof equivalent === "string" && equivalent.trim()) {
+      return [equivalent.trim()];
+    }
+
+    const record = asObject(equivalent);
+    const code = record ? readString(record, ["subject_code", "subjectCode", "course_code", "courseCode", "code"]) : undefined;
+    return code ? [code] : [];
   });
 }
 

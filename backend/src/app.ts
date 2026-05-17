@@ -32,6 +32,7 @@ const auditRepository =
 const fallbackSubsystemClients = new MockSubsystemClients();
 const subsystemClients = new EsbSubsystemClients(fallbackSubsystemClients, {
   srmStudentsUrl: env.esb.srmStudentsUrl,
+  cmsCatalogUrl: env.esb.cmsCatalogUrl,
   sfwStudentStatusUrlTemplate: env.esb.sfwStudentStatusUrlTemplate
 });
 
@@ -58,6 +59,7 @@ export function createApp() {
     },
     integrations: {
       srm_students: env.esb.srmStudentsUrl,
+      cms_catalog: env.esb.cmsCatalogUrl,
       sfw_student_status: env.esb.sfwStudentStatusUrlTemplate
     }
   };
