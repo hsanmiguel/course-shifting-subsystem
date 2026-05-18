@@ -555,7 +555,7 @@ export default function ApplicationForm() {
                   {fieldErrors.currentYear && <FieldError>{fieldErrors.currentYear}</FieldError>}
                 </Select>
                 <TextField isRequired isInvalid={!!fieldErrors.gpa} className="w-full" name="gpa" type="number">
-                  <Label>Current GPA</Label>
+                  <Label>Current GWA</Label>
                   <Input 
                     id="gpa"
                     placeholder="0.00" 
