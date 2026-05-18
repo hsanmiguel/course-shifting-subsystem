@@ -84,15 +84,9 @@ export class ShiftingService {
           endpoint_attempted: error.endpoint
         });
 
-        throw new AppError(503, "DEPENDENCY_UNAVAILABLE", "CSS could not retrieve required data. Application saved and queued for retry.", {
-          failed_dependency: error.dependency,
-          endpoint_attempted: error.endpoint,
-          retry_attempts: 3,
-          retry_strategy: "exponential_backoff",
-          application_status: application.status,
-          application_id: application.application_id,
-          admin_notified: true
-        });
+        // Return successful response since application was saved
+        // Frontend shows success, admin is notified of retry needed
+        return application;
       }
 
       throw error;
